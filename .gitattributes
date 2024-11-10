@@ -1,3 +1,6 @@
-backend/calculators/PerformanceCalculatorLinux/ filter=lfs diff=lfs merge=lfs -text
-backend/calculators/PerformanceCalculatorWindows/ filter=lfs diff=lfs merge=lfs -text
-backend/calculators/PerformanceCalculatorMac/ filter=lfs diff=lfs merge=lfs -text
+backend/calculators/PerformanceCalculatorLinux/* filter=lfs diff=lfs merge=lfs -text
+backend/calculators/PerformanceCalculatorWindows/* filter=lfs diff=lfs merge=lfs -text
+backend/calculators/PerformanceCalculatorMac/* filter=lfs diff=lfs merge=lfs -text
+backend/calculators/PerformanceCalculatorLinux filter=lfs diff=lfs merge=lfs -text
+backend/calculators/PerformanceCalculatorWindows filter=lfs diff=lfs merge=lfs -text
+backend/calculators/PerformanceCalculatorMac filter=lfs diff=lfs merge=lfs -text
