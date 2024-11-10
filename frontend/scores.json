@@ -1,0 +1,184 @@
+[
+  {
+    "beatmap": {
+      "id": 2245774,
+      "mods": [],
+      "accPercent": 98.63945578231292,
+      "combo": 192,
+      "nmiss": 0,
+      "hitJudgement": 9.2,
+      "approachRate": 9.4,
+      "circleSize": 4,
+      "drainRate": 6.2,
+      "rating": 6.1
+    },
+    "ojsamaPP": 253.991,
+    "rosuPP": 242.132,
+    "otpcPP": 251.87,
+    "actualPP": 240.855
+  },
+  {
+    "beatmap": {
+      "id": 2250747,
+      "mods": [],
+      "accPercent": 97.77777777777777,
+      "combo": 177,
+      "nmiss": 1,
+      "hitJudgement": 9.2,
+      "approachRate": 9.2,
+      "circleSize": 4.2,
+      "drainRate": 5.2,
+      "rating": 6.05
+    },
+    "ojsamaPP": 206.973,
+    "rosuPP": 192.879,
+    "otpcPP": 211.75,
+    "actualPP": 194.266
+  },
+  {
+    "beatmap": {
+      "id": 2245772,
+      "mods": [],
+      "accPercent": 97.88359788359789,
+      "combo": 126,
+      "nmiss": 2,
+      "hitJudgement": 9,
+      "approachRate": 9.2,
+      "circleSize": 4,
+      "drainRate": 5,
+      "rating": 6.05
+    },
+    "ojsamaPP": 160.795,
+    "rosuPP": 146.987,
+    "otpcPP": 198.81,
+    "actualPP": 184.016
+  },
+  {
+    "beatmap": {
+      "id": 4749569,
+      "mods": [],
+      "accPercent": 94.66666666666667,
+      "combo": 276,
+      "nmiss": 2,
+      "hitJudgement": 9.4,
+      "approachRate": 9.4,
+      "circleSize": 4,
+      "drainRate": 5.6,
+      "rating": 6.21
+    },
+    "ojsamaPP": 189.027,
+    "rosuPP": 154.328,
+    "otpcPP": 195.51,
+    "actualPP": 176.448
+  },
+  {
+    "beatmap": {
+      "id": 1612454,
+      "mods": [],
+      "accPercent": 96.75675675675676,
+      "combo": 247,
+      "nmiss": 0,
+      "hitJudgement": 9.1,
+      "approachRate": 9.2,
+      "circleSize": 3.2,
+      "drainRate": 5,
+      "rating": 5.5
+    },
+    "ojsamaPP": 174.5,
+    "rosuPP": 160.55,
+    "otpcPP": 175.71,
+    "actualPP": 161.065
+  },
+  {
+    "beatmap": {
+      "id": 1642274,
+      "mods": [],
+      "accPercent": 94.6927374301676,
+      "combo": 279,
+      "nmiss": 3,
+      "hitJudgement": 9,
+      "approachRate": 9.3,
+      "circleSize": 3.2,
+      "drainRate": 5.2,
+      "rating": 6.05
+    },
+    "ojsamaPP": 124.14,
+    "rosuPP": 102.822,
+    "otpcPP": 174.87,
+    "actualPP": 155.618
+  },
+  {
+    "beatmap": {
+      "id": 4706077,
+      "mods": [],
+      "accPercent": 95.31680440771349,
+      "combo": 172,
+      "nmiss": 4,
+      "hitJudgement": 9.4,
+      "approachRate": 9.4,
+      "circleSize": 4,
+      "drainRate": 5.8,
+      "rating": 6.11
+    },
+    "ojsamaPP": 117.485,
+    "rosuPP": 98.637,
+    "otpcPP": 174.8,
+    "actualPP": 155.301
+  },
+  {
+    "beatmap": {
+      "id": 2096054,
+      "mods": [],
+      "accPercent": 96.05911330049261,
+      "combo": 241,
+      "nmiss": 1,
+      "hitJudgement": 9,
+      "approachRate": 9.4,
+      "circleSize": 4,
+      "drainRate": 6.5,
+      "rating": 5.77
+    },
+    "ojsamaPP": 168.944,
+    "rosuPP": 147.599,
+    "otpcPP": 173.08,
+    "actualPP": 154.534
+  },
+  {
+    "beatmap": {
+      "id": 1059388,
+      "mods": [
+        "HD"
+      ],
+      "accPercent": 97.4910394265233,
+      "combo": 239,
+      "nmiss": 0,
+      "hitJudgement": 8.7,
+      "approachRate": 9.2,
+      "circleSize": 4.6,
+      "drainRate": 7,
+      "rating": 5.08
+    },
+    "ojsamaPP": 158.398,
+    "rosuPP": 149.379,
+    "otpcPP": 161.9,
+    "actualPP": 151.176
+  },
+  {
+    "beatmap": {
+      "id": 869197,
+      "mods": [],
+      "accPercent": 97.08691499522445,
+      "combo": 458,
+      "nmiss": 0,
+      "hitJudgement": 8.5,
+      "approachRate": 9.3,
+      "circleSize": 4,
+      "drainRate": 7,
+      "rating": 5.3
+    },
+    "ojsamaPP": 158.665,
+    "rosuPP": 148.87,
+    "otpcPP": 163.78,
+    "actualPP": 151.166
+  }
+]
