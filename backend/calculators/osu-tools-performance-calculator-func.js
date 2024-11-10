@@ -17,13 +17,13 @@ function otpcCalculatePP(beatmapId, mods = [], accPercent = 100, combo = null, n
 
         switch (process.platform) {
             case 'linux':
-                executablePath = path.join(__dirname, 'PerformanceCalculatorLinux', 'PerformanceCalculator');
+                executablePath = path.join(__dirname, 'PerformanceCalculators/PerformanceCalculatorLinux', 'PerformanceCalculator');
                 break;
             case 'win32':
-                executablePath = path.join(__dirname, 'PerformanceCalculatorWindows', 'PerformanceCalculator.exe');
+                executablePath = path.join(__dirname, 'PerformanceCalculators/PerformanceCalculatorWindows', 'PerformanceCalculator.exe');
                 break;
             case 'darwin':
-                executablePath = path.join(__dirname, 'PerformanceCalculatorMac', 'PerformanceCalculator');
+                executablePath = path.join(__dirname, 'PerformanceCalculators/PerformanceCalculatorMac', 'PerformanceCalculator');
                 break;
             default:
                 console.error('Unsupported OS');
