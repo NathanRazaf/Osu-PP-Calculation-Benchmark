@@ -12,7 +12,7 @@ async function fetchScoresFromBeatmap(beatmapId, limit) {
     return fetchScoresFromEventSource(url, `beatmap ${beatmapId}`);
 }
 
-async function fetchScoresFromMultipleBeatmaps(beatmapIds, limit) {
+async function fetchScoresMultipleBeatmaps(beatmapIds, limit) {
     const promises = beatmapIds.map(beatmapId => fetchScoresFromBeatmap(beatmapId, limit)
         .catch(error => {
             console.error(`Skipping beatmap ${beatmapId} due to error:`, error.message);
@@ -35,4 +35,4 @@ async function fetchScoresFromMultipleBeatmaps(beatmapIds, limit) {
     return allScores;
 }
 
-module.exports = { fetchScoresFromMultipleBeatmaps };
+module.exports = { fetchScoresMultipleBeatmaps };
