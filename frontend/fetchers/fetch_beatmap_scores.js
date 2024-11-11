@@ -2,9 +2,7 @@
 const fetchScoresFromEventSource = require('./event_source_fetcher');
 const { writePlaysCSV, writeScoresCSV, writeBeatmapsCSV } = require('./csv-writer');
 
-const BEATMAPS_CSV_FILE = '../data_analysis/data/beatmaps.csv';
-const PLAYS_CSV_FILE = '../data_analysis/data/plays.csv';
-const SCORES_CSV_FILE = '../data_analysis/data/scores.csv';
+
 const SCORES_BEATMAP_FETCH_API = 'http://localhost:3000/fetch/beatmap/scores';
 
 async function fetchScoresFromBeatmap(beatmapId, limit) {
@@ -12,7 +10,7 @@ async function fetchScoresFromBeatmap(beatmapId, limit) {
     return fetchScoresFromEventSource(url, `beatmap ${beatmapId}`);
 }
 
-async function fetchScoresMultipleBeatmaps(beatmapIds, limit) {
+async function fetchScoresMultipleBeatmaps(beatmapIds, limit, playsCsvFile, scoresCsvFile, beatmapsCsvFile) {
     const promises = beatmapIds.map(beatmapId => fetchScoresFromBeatmap(beatmapId, limit)
         .catch(error => {
             console.error(`Skipping beatmap ${beatmapId} due to error:`, error.message);
@@ -25,9 +23,9 @@ async function fetchScoresMultipleBeatmaps(beatmapIds, limit) {
     console.log(`Fetched ${allScores.length} scores for ${beatmapIds.length} beatmaps`);
 
     if (allScores.length > 0) {
-        writePlaysCSV(allScores, PLAYS_CSV_FILE);
-        writeScoresCSV(allScores, SCORES_CSV_FILE);
-        writeBeatmapsCSV(allScores, BEATMAPS_CSV_FILE);
+        writePlaysCSV(allScores, playsCsvFile);
+        writeScoresCSV(allScores, scoresCsvFile);
+        writeBeatmapsCSV(allScores, beatmapsCsvFile);
         console.log('All data written to CSV files.');
     } else {
         console.log('No scores to write.');
