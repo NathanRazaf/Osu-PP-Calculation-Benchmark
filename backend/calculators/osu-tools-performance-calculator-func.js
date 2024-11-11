@@ -3,7 +3,7 @@ const path = require('path');
 const fs = require('fs');
 
 function deleteCacheFile(beatmapId) {
-    const cacheFilePath = path.join(__dirname, 'cache', `${beatmapId}.osu`);
+    const cacheFilePath = path.join(__dirname, '../cache', `${beatmapId}.osu`);
     if (fs.existsSync(cacheFilePath)) {
         fs.unlinkSync(cacheFilePath, (err) => {
             if (err) console.error(`Failed to delete cache file: ${err.message}`);
@@ -33,11 +33,16 @@ function otpcCalculatePP(beatmapId, mods = [], accPercent = 100, combo = null, n
         let modsExecArray = [];
         for (let mod of mods) {
             modsExecArray.push(`-m`);
-            modsExecArray.push(mod);
+            modsExecArray.push(mod.toLowerCase());
         }
 
+        const execArray = ['simulate', 'osu', beatmapId.toString(), 
+            '-a', accPercent.toString(), 
+            '-c', combo.toString(), 
+            '-X', nmiss.toString(), ...modsExecArray];
+
         execFile(executablePath, 
-            ['simulate', 'osu', beatmapId.toString(), '-a', accPercent.toString(), '-c', combo.toString(), '-X', nmiss.toString(), ...modsExecArray], 
+            execArray, 
             (error, stdout, stderr) => {
             if (error) {
                 console.error(`Error: ${error.message}`);
@@ -50,6 +55,7 @@ function otpcCalculatePP(beatmapId, mods = [], accPercent = 100, combo = null, n
 
             if (ppLine) {
                 const ppValue = parseFloat(ppLine.split(':')[1].trim()); 
+                console.log(`otpc: Executing: ${execArray.join(' ')}`);
                 console.log(`PP: ${ppValue.toFixed(3)}`);
                 deleteCacheFile(beatmapId);
                 resolve(ppValue.toFixed(3));

@@ -24,6 +24,7 @@ async function rosuCalculatePP(beatmapId, mods = [], accPercent = 100, combo = n
         hitresultPriority: rosu.HitResultPriority.WorstCase,
     }).calculate(map);
 
+    console.log(`rosu: Executing: ${beatmapId} mods ${concatMods} ${accPercent}% x${combo} misses ${nmiss}`);
     console.log(`PP: ${currAttrs.pp.toFixed(3)}`);
 
     // Free the beatmap manually to avoid risking memory leakage.

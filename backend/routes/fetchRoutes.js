@@ -7,7 +7,7 @@ const { otpcCalculatePP } = require('../calculators/osu-tools-performance-calcul
 
 const router = express.Router();
 
-router.get('/scores/:username/:limit', async (req, res) => {
+router.get('/user/scores/:username/:limit', async (req, res) => {
     res.setHeader('Content-Type', 'text/event-stream');
     res.setHeader('Cache-Control', 'no-cache');
     res.setHeader('Connection', 'keep-alive');
@@ -29,19 +29,25 @@ router.get('/scores/:username/:limit', async (req, res) => {
         let i = 0;
         for (let item of response.data) {
             const beatmapId = item.beatmap.id;
+            const playId = item.id;
             const mods = item.mods;
+            const score = item.score;
             const accPercent = item.accuracy * 100;
             const combo = item.max_combo;
             const nmiss = item.statistics.count_miss;
-            const ojsamaPP = await ojsamaCalculatePP(beatmapId, mods, accPercent, combo, nmiss);
-            const rosuPP = await rosuCalculatePP(beatmapId, mods, accPercent, combo, nmiss);
-            const otpcPP = await otpcCalculatePP(beatmapId, mods, accPercent, combo, nmiss);
+            // Calculate PP using all 3 calculators
+            const [ojsamaPP, rosuPP, otpcPP] = await Promise.all([
+                ojsamaCalculatePP(beatmapId, mods, accPercent, combo, nmiss),
+                rosuCalculatePP(beatmapId, mods, accPercent, combo, nmiss),
+                otpcCalculatePP(beatmapId, mods, accPercent, combo, nmiss)
+            ]);
             finalRes.push(
                 { beatmap: 
                     {
-                        id: beatmapId,
+                        beatmapId: beatmapId,
                         mods: mods,
-                        accPercent: accPercent,
+                        accPercent: accPercent.toFixed(2),
+                        score: score,
                         combo: combo,
                         nmiss: nmiss,
                         hitJudgement: item.beatmap.accuracy,
@@ -50,16 +56,17 @@ router.get('/scores/:username/:limit', async (req, res) => {
                         drainRate: item.beatmap.drain,
                         rating: item.beatmap.difficulty_rating,
                     }, 
-                    ojsamaPP: parseFloat(ojsamaPP), 
-                    rosuPP: parseFloat(rosuPP), 
-                    otpcPP: parseFloat(otpcPP), 
+                    playId: playId,
+                    ojsamaPP: ojsamaPP, 
+                    rosuPP: rosuPP, 
+                    otpcPP: otpcPP, 
                     actualPP: item.pp 
                 }
             );
             // Calculate progress percentage and send it to the client
             const progress = ((i + 1) / req.params.limit) * 100;
             res.write(`data: ${JSON.stringify({ progress: progress.toFixed(2) })}\n\n`);
-            console.log(`BeatmapId: ${beatmapId}, Ojsama PP: ${ojsamaPP}, Rosu PP: ${rosuPP}, OTPC PP: ${otpcPP}, Actual PP: ${item.pp}`);
+            console.log(`BeatmapId: ${beatmapId}, Ojsama PP: ${ojsamaPP}, Rosu PP: ${rosuPP}, OTPC PP: ${otpcPP}, Actual PP: ${item.pp}\n\n`);
             i++;
         }
         
@@ -71,9 +78,9 @@ router.get('/scores/:username/:limit', async (req, res) => {
         
         if (!res.headersSent) {
             if (error.response?.status === 404) {
-                res.write(`data: ${JSON.stringify({ error: 'No user found' })}\n\n`);
+                res.write(`data: ${JSON.stringify({ message: 'User not found' })}\n\n`);
             } else {
-                res.write(`data: ${JSON.stringify({ error: 'Internal server error' })}\n\n`);
+                res.write(`data: ${JSON.stringify({ message: 'Internal server error' })}\n\n`);
             }
             res.end();
         }
@@ -81,17 +88,83 @@ router.get('/scores/:username/:limit', async (req, res) => {
 });
 
 
-router.post('/beatmap/compare', async (req, res) => {
-    try {
-        const { beatmapId, mods, accPercent, combo, nmiss } = req.body;
-        const ojsamaPP = await ojsamaCalculatePP(beatmapId, mods, accPercent, combo, nmiss);
-        const rosuPP = await rosuCalculatePP(beatmapId, mods, accPercent, combo, nmiss);
-        const otpcPP = await otpcCalculatePP(beatmapId, mods, accPercent, combo, nmiss);
+router.get('/beatmap/scores/:beatmapId/:limit', async (req, res) => {
+    res.setHeader('Content-Type', 'text/event-stream');
+    res.setHeader('Cache-Control', 'no-cache');
+    res.setHeader('Connection', 'keep-alive');
 
-        res.json({ ojsamaPP, rosuPP, otpcPP });
+    try {
+        const token = await getAccessToken();
+        const response = await axios.get(`https://osu.ppy.sh/api/v2/beatmaps/${req.params.beatmapId}/scores`, {
+            params: { "mode": "osu" },
+            headers: { "Authorization": `Bearer ${token}` }
+        });
+        const limit = req.params.limit || 10;
+        if (limit > 50) limit = 50;
+        const scores = response.data.scores.slice(0, req.params.limit);  
+        const finalRes = [];
+        console.log(scores[0]);
+        const beatmap = await axios.get(`https://osu.ppy.sh/api/v2/beatmaps/${req.params.beatmapId}`, {
+            headers: { "Authorization": `Bearer ${token}` }
+        });
+        let i = 0;
+        for (let item of scores) {
+            const username = item.user.username;
+            const playId = item.id;
+            const mods = item.mods;
+            const score = item.score;
+            const accPercent = item.accuracy * 100;
+            const combo = item.max_combo;
+            const nmiss = item.statistics.count_miss;
+            // Calculate PP using all 3 calculators
+            const [ojsamaPP, rosuPP, otpcPP] = await Promise.all([
+                ojsamaCalculatePP(req.params.beatmapId, mods, accPercent, combo, nmiss),
+                rosuCalculatePP(req.params.beatmapId, mods, accPercent, combo, nmiss),
+                otpcCalculatePP(req.params.beatmapId, mods, accPercent, combo, nmiss)
+            ]);
+            finalRes.push(
+                { beatmap: 
+                    {
+                        beatmapId: req.params.beatmapId,
+                        mods: mods,
+                        accPercent: accPercent.toFixed(2),
+                        score: score,
+                        combo: combo,
+                        nmiss: nmiss,
+                        hitJudgement: beatmap.data.accuracy,
+                        approachRate: beatmap.data.ar,
+                        circleSize: beatmap.data.cs,
+                        drainRate: beatmap.data.drain,
+                        rating: beatmap.data.difficulty_rating,
+                    }, 
+                    username: username,
+                    playId: playId,
+                    ojsamaPP: ojsamaPP, 
+                    rosuPP: rosuPP, 
+                    otpcPP: otpcPP, 
+                    actualPP: item.pp 
+                }
+            );
+            // Calculate progress percentage and send it to the client
+            const progress = ((i + 1) / limit) * 100;
+            res.write(`data: ${JSON.stringify({ progress: progress.toFixed(2) })}\n\n`);
+            console.log(`BeatmapId: ${req.params.beatmapId}, Ojsama PP: ${ojsamaPP}, Rosu PP: ${rosuPP}, OTPC PP: ${otpcPP}, Actual PP: ${item.pp}\n\n`);
+            i++;
+        }
+        // Send the final data and close the connection
+        res.write(`data: ${JSON.stringify({ message: "Finished processing", results: finalRes })}\n\n`);
+        res.end();
     } catch (error) {
-        console.error(error);
-        res.status(500).send('Internal server error');
+        console.error(error.message);
+        
+        if (!res.headersSent) {
+            if (error.response?.status === 404) {
+                res.write(`data: ${JSON.stringify({ message: 'Beatmap not found' })}\n\n`);
+            } else {
+                res.write(`data: ${JSON.stringify({ message: 'Internal server error' })}\n\n`);
+            }
+            res.end();
+        }
     }
 });
 
