@@ -14,30 +14,14 @@ function csvMaker(data) {
     return csvRows.join('\n');
 }
 
-function writeBeatmapsCSV(jsonData, filePath) {
-    const beatmapData = jsonData.map(item => {
-        const { beatmap } = item;
-        const { beatmapId, hitJudgement, approachRate, circleSize, drainRate, rating } = beatmap;
-        return {
-            beatmapId,
-            hitJudgement,
-            approachRate,
-            circleSize,
-            drainRate,
-            rating,
-        };
-    });
 
-    const csvContent = csvMaker(beatmapData);
-    fs.writeFileSync(filePath, csvContent, 'utf8');
-}
 
 function writePlaysCSV(jsonData, filePath) {
     const possibleMods = ['EZ', 'HT', 'HD', 'NC', 'DT', 'HR', 'FL'];
 
     const playData = jsonData.map(item => {
         const { beatmap, playId, actualPP } = item;
-        const { mods = [], id, ...beatmapWithoutMods } = beatmap; // Default `mods` to empty array
+        const { mods = [], id, beatmapId, score, ...beatmapWithoutMods } = beatmap; // Default `mods` to empty array
 
         // Create mod flags for each possible mod
         const modFlags = {};
@@ -46,7 +30,6 @@ function writePlaysCSV(jsonData, filePath) {
         });
 
         return {
-            playId,
             actualPP,
             ...beatmapWithoutMods,
             ...modFlags,
@@ -69,7 +52,6 @@ function writeScoresCSV(jsonData, filePath) {
 }
 
 module.exports = {
-    writeBeatmapsCSV,
     writePlaysCSV,
     writeScoresCSV,
 };

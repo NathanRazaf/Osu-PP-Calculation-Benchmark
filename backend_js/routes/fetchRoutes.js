@@ -103,7 +103,6 @@ router.get('/beatmap/scores/:beatmapId/:limit', async (req, res) => {
         if (limit > 50) limit = 50;
         const scores = response.data.scores.slice(0, req.params.limit);  
         const finalRes = [];
-        console.log(scores[0]);
         const beatmap = await axios.get(`https://osu.ppy.sh/api/v2/beatmaps/${req.params.beatmapId}`, {
             headers: { "Authorization": `Bearer ${token}` }
         });
