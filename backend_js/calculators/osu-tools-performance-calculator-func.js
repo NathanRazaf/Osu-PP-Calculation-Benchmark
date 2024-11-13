@@ -15,16 +15,7 @@ async function deleteCacheFile(beatmapId) {
 }
 
 // Main PP calculation function with caching
-async function otpcCalculatePP(beatmapId, mods = [], accPercent = 100, combo = null, nmiss = 0, playId = null) {
-    // First, search if the score is already in the database using the playId
-    if (playId) {
-        const score = await Score.findOne({ playId: playId });
-        if (score) {
-            console.log(`Score with playId ${playId} already exists in database`);
-            return score.otpcPP;
-        }
-    }
-
+async function otpcCalculatePP(beatmapId, mods = [], accPercent = 100, combo = null, nmiss = 0) {
     return new Promise((resolve, reject) => {
         let executablePath;
 

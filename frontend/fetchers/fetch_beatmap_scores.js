@@ -9,29 +9,14 @@ async function fetchScoresFromBeatmap(beatmapId, limit) {
     return fetchScoresFromEventSource(url, `beatmap ${beatmapId}`);
 }
 
-async function fetchScoresMultipleBeatmaps(beatmapIds, limit, playsCsvFile, scoresCsvFile) {
-    const timeNow = new Date().toISOString();
+async function fetchScoresMultipleBeatmaps(beatmapIds, limit) {
     const promises = beatmapIds.map(beatmapId => fetchScoresFromBeatmap(beatmapId, limit)
         .catch(error => {
             console.error(`Skipping beatmap ${beatmapId} due to error:`, error.message);
             return []; // Return empty array if fetching fails for a beatmap
         })
     );
-
-    const results = await Promise.all(promises);
-    const allScores = results.flat();
-    console.log(`Fetched ${allScores.length} scores for ${beatmapIds.length} beatmaps`);
-
-    if (allScores.length > 0) {
-        writePlaysCSV(allScores, playsCsvFile);
-        writeScoresCSV(allScores, scoresCsvFile);
-        console.log('All data written to CSV files.');
-    } else {
-        console.log('No scores to write.');
-    }
-    const timeThen = new Date().toISOString();
-    console.log(`Time taken: ${timeNow} - ${timeThen}`);
-    return allScores;
+    await Promise.all(promises);
 }
 
 module.exports = { fetchScoresMultipleBeatmaps };
