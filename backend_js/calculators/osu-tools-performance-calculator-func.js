@@ -1,7 +1,7 @@
 const { execFile } = require('child_process');
 const path = require('path');
 const fs = require('fs');
-const { client } = require('../redisClient');
+const Score = require('../mongo_models/scoreModel');
 
 
 // Helper function to delete cached beatmap file
@@ -15,15 +15,14 @@ async function deleteCacheFile(beatmapId) {
 }
 
 // Main PP calculation function with caching
-async function otpcCalculatePP(beatmapId, mods = [], accPercent = 100, combo = null, nmiss = 0) {
-    // Create a unique cache key based on input parameters
-    const cacheKey = `otpc:${beatmapId}:${mods.join(',')}:${accPercent}:${combo}:${nmiss}`;
-    
-    // Check if result exists in Redis cache
-    const cachedPP = await client.get(cacheKey);
-    if (cachedPP) {
-        console.log(`Cache hit for ${cacheKey}`);
-        return parseFloat(cachedPP);
+async function otpcCalculatePP(beatmapId, mods = [], accPercent = 100, combo = null, nmiss = 0, playId = null) {
+    // First, search if the score is already in the database using the playId
+    if (playId) {
+        const score = await Score.findOne({ playId: playId });
+        if (score) {
+            console.log(`Score with playId ${playId} already exists in database`);
+            return score.otpcPP;
+        }
     }
 
     return new Promise((resolve, reject) => {
@@ -75,9 +74,6 @@ async function otpcCalculatePP(beatmapId, mods = [], accPercent = 100, combo = n
                 console.log(`PP: ${ppValue.toFixed(3)}`);
                 deleteCacheFile(beatmapId);
 
-                // Cache the result in Redis with a TTL (1 day)
-                client.set(cacheKey, ppValue.toFixed(3), { EX: 86400 });
-
                 resolve(ppValue.toFixed(3));
             } else {
                 console.log("PP value not found in output.");
@@ -88,12 +84,3 @@ async function otpcCalculatePP(beatmapId, mods = [], accPercent = 100, combo = n
 }
 
 module.exports = { otpcCalculatePP };
-
-// Ensure Redis disconnects when the process exits
-process.on('SIGINT', async () => {
-    if (client.isOpen) {
-        await client.quit();
-        console.log('Redis client disconnected');
-    }
-    process.exit();
-});

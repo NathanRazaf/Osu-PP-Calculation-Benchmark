@@ -30,6 +30,7 @@ function writePlaysCSV(jsonData, filePath) {
         });
 
         return {
+            playId, 
             actualPP,
             ...beatmapWithoutMods,
             ...modFlags,

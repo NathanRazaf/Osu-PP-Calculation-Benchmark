@@ -4,6 +4,8 @@ const { getAccessToken } = require('../authentication/token');
 const { ojsamaCalculatePP } = require('../calculators/ojsama-func');
 const { rosuCalculatePP } = require('../calculators/rosu-pp-js-func');
 const { otpcCalculatePP } = require('../calculators/osu-tools-performance-calculator-func');
+const mongoose = require('mongoose');
+const Score = require('../mongo_models/scoreModel');
 
 const router = express.Router();
 
@@ -37,9 +39,9 @@ router.get('/user/scores/:username/:limit', async (req, res) => {
             const nmiss = item.statistics.count_miss;
             // Calculate PP using all 3 calculators
             const [ojsamaPP, rosuPP, otpcPP] = await Promise.all([
-                ojsamaCalculatePP(beatmapId, mods, accPercent, combo, nmiss),
-                rosuCalculatePP(beatmapId, mods, accPercent, combo, nmiss),
-                otpcCalculatePP(beatmapId, mods, accPercent, combo, nmiss)
+                ojsamaCalculatePP(beatmapId, mods, accPercent, combo, nmiss, playId),
+                rosuCalculatePP(beatmapId, mods, accPercent, combo, nmiss, playId),
+                otpcCalculatePP(beatmapId, mods, accPercent, combo, nmiss, playId)
             ]);
             finalRes.push(
                 { beatmap: 
@@ -63,6 +65,23 @@ router.get('/user/scores/:username/:limit', async (req, res) => {
                     actualPP: item.pp 
                 }
             );
+
+            // Push the score to the database if a play with the same playId doesn't exist in it
+            const maybeScore = await Score.findOne({ playId: playId });
+            if (!maybeScore) {
+                const newScore = new Score({
+                    playId: playId,
+                    beatmapId: beatmapId,
+                    username: username,
+                    score: score,
+                    ojsamaPP: ojsamaPP,
+                    rosuPP: rosuPP,
+                    otpcPP: otpcPP,
+                    actualPP: item.pp
+                });
+                await newScore.save();
+                console.log(`Score with playId ${playId} saved to database`);
+            }
             // Calculate progress percentage and send it to the client
             const progress = ((i + 1) / req.params.limit) * 100;
             res.write(`data: ${JSON.stringify({ progress: progress.toFixed(2) })}\n\n`);
@@ -117,9 +136,9 @@ router.get('/beatmap/scores/:beatmapId/:limit', async (req, res) => {
             const nmiss = item.statistics.count_miss;
             // Calculate PP using all 3 calculators
             const [ojsamaPP, rosuPP, otpcPP] = await Promise.all([
-                ojsamaCalculatePP(req.params.beatmapId, mods, accPercent, combo, nmiss),
-                rosuCalculatePP(req.params.beatmapId, mods, accPercent, combo, nmiss),
-                otpcCalculatePP(req.params.beatmapId, mods, accPercent, combo, nmiss)
+                ojsamaCalculatePP(req.params.beatmapId, mods, accPercent, combo, nmiss, playId),
+                rosuCalculatePP(req.params.beatmapId, mods, accPercent, combo, nmiss, playId),
+                otpcCalculatePP(req.params.beatmapId, mods, accPercent, combo, nmiss, playId)
             ]);
             finalRes.push(
                 { beatmap: 
@@ -144,6 +163,23 @@ router.get('/beatmap/scores/:beatmapId/:limit', async (req, res) => {
                     actualPP: item.pp 
                 }
             );
+            // Push the score to the database if a play with the same playId doesn't exist in it
+            const maybeScore = await Score.findOne({ playId: playId });
+            if (!maybeScore) {
+                const newScore = new Score({
+                    playId: playId,
+                    beatmapId: req.params.beatmapId,
+                    username: username,
+                    score: score,
+                    ojsamaPP: ojsamaPP,
+                    rosuPP: rosuPP,
+                    otpcPP: otpcPP,
+                    actualPP: item.pp
+                });
+                await newScore.save();
+                console.log(`Score with playId ${playId} saved to database`);
+            }
+
             // Calculate progress percentage and send it to the client
             const progress = ((i + 1) / limit) * 100;
             res.write(`data: ${JSON.stringify({ progress: progress.toFixed(2) })}\n\n`);

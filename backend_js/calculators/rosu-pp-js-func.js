@@ -1,6 +1,7 @@
 const axios = require('axios');
 const rosu = require("rosu-pp-js");
-const { client } = require('../redisClient'); // Import the Redis client
+const Score = require('../mongo_models/scoreModel');
+
 
 async function fetchBeatmap(beatmapId) {
     const url = `https://osu.ppy.sh/osu/${beatmapId}`;
@@ -8,17 +9,17 @@ async function fetchBeatmap(beatmapId) {
     return Buffer.from(response.data);
 }
 
-async function rosuCalculatePP(beatmapId, mods = [], accPercent = 100, combo = null, nmiss = 0) {
-    const cacheKey = `rosu:${beatmapId}:${mods.join('')}:${accPercent}:${combo}:${nmiss}`;
+async function rosuCalculatePP(beatmapId, mods = [], accPercent = 100, combo = null, nmiss = 0, playId = null) {
+    // First, search if the score is already in the database using the playId
+    if (playId) {
+        const score = await Score.findOne({ playId: playId });
+        if (score) {
+            console.log(`Score with playId ${playId} already exists in database`);
+            return score.rosuPP;
+        }
+    }
 
     try {
-        // Check for cached value
-        const cachedPP = await client.get(cacheKey);
-        if (cachedPP) {
-            console.log(`Cache hit for ${cacheKey}`);
-            return parseFloat(cachedPP);
-        }
-
         const bytes = await fetchBeatmap(beatmapId);
         const concatMods = mods.join('');
         let map = new rosu.Beatmap(bytes);
@@ -37,8 +38,6 @@ async function rosuCalculatePP(beatmapId, mods = [], accPercent = 100, combo = n
         map.free();
 
         const ppValue = currAttrs.pp.toFixed(3);
-        // Cache the result with a 1-hour expiration
-        await client.set(cacheKey, ppValue, { EX: 3600 });
 
         return ppValue;
     } catch (error) {
@@ -46,14 +45,5 @@ async function rosuCalculatePP(beatmapId, mods = [], accPercent = 100, combo = n
         throw error;
     }
 }
-
-// Handle Redis client disconnection on shutdown
-process.on('SIGINT', async () => {
-    if (client.isOpen) {
-        await client.quit();
-        console.log('Redis client disconnected');
-    }
-    process.exit();
-});
 
 module.exports = { rosuCalculatePP };
