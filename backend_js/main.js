@@ -3,6 +3,7 @@ dotenv.config();
 const express = require('express');
 const fetchRoutes = require('./routes/fetchRoutes');
 const mongoose = require('mongoose');
+const cors = require('cors');
 
 const app = express();
 
@@ -11,6 +12,8 @@ app.use(express.json({ limit: '1mb' }));
 
 // Use routes defined in the routes folder
 app.use('/fetch', fetchRoutes);
+
+app.use(cors());
 
 // Connectez-vous à MongoDB
 mongoose.connect(process.env.MONGODB_URI)

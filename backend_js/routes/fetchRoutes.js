@@ -14,6 +14,7 @@ router.get('/user/scores/:username/:limit', async (req, res) => {
     res.setHeader('Content-Type', 'text/event-stream');
     res.setHeader('Cache-Control', 'no-cache');
     res.setHeader('Connection', 'keep-alive');
+    res.setHeader('Access-Control-Allow-Origin', '*');
 
     try {
         const token = await getAccessToken();
@@ -154,6 +155,7 @@ router.get('/beatmap/scores/:beatmapId/:limit', async (req, res) => {
     res.setHeader('Content-Type', 'text/event-stream');
     res.setHeader('Cache-Control', 'no-cache');
     res.setHeader('Connection', 'keep-alive');
+    res.setHeader('Access-Control-Allow-Origin', '*');
 
     try {
         const token = await getAccessToken();

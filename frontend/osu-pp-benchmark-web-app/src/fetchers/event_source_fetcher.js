@@ -1,10 +1,10 @@
-// event_source_fetcher.js
-const EventSource = require('eventsource');
+// fetchScoresFromEventSource.js
 
-function fetchScoresFromEventSource(url, progressLabel) {
+export function fetchScoresFromEventSource(url, progressLabel, onProgress = null) {
     return new Promise((resolve, reject) => {
         console.log(`Fetching scores with ${progressLabel}. It may take a while...`);
 
+        // Use the native EventSource API in the browser
         const eventSource = new EventSource(url);
         let finalResult = null;
 
@@ -12,6 +12,9 @@ function fetchScoresFromEventSource(url, progressLabel) {
             const data = JSON.parse(event.data);
             if (data.progress) {
                 console.log(`Progress for ${progressLabel}: ${data.progress}%`);
+                if (onProgress) {
+                    onProgress(data.progress);
+                }
             }
             if (data.message === "Finished processing") {
                 console.log(`Finished processing for ${progressLabel}.`);
@@ -22,11 +25,9 @@ function fetchScoresFromEventSource(url, progressLabel) {
         };
 
         eventSource.onerror = (error) => {
-            console.error(`Error fetching scores for ${progressLabel}:`, error.message);
+            console.error(`Error fetching scores for ${progressLabel}:`, error);
             eventSource.close();
             reject(error);
         };
     });
 }
-
-module.exports = fetchScoresFromEventSource;
