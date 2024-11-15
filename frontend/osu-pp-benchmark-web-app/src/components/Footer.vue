@@ -14,10 +14,10 @@
     text-align: center;
     color: #61dafb;
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-    /* put the footer at the bottom of the page */
     left: 0;
     bottom: 0;
     width: 100%;
+    position: fixed;
   }
   
   h1 {

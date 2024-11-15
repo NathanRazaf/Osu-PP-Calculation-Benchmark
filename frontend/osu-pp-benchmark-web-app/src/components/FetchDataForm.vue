@@ -17,6 +17,8 @@
     </select>
     <button @click="fetchData">Submit</button>
 
+    <p v-if="displayMessage" :style="messageStyle">{{ displayMessage }}</p>
+
     <!-- Progress bar and percentage display -->
     <div style="margin-top: 7px; margin-bottom: 30px;">
       <progress :value="progressValue" max="100" id="progress-bar"></progress>
@@ -35,11 +37,14 @@ const isUsername = ref(true) // Default selection as "Username"
 const progressValue = ref(0)
 const progressText = ref('0%')
 const limit = ref()
+const displayMessage = ref('')
+const messageStyle = ref({})
 
 async function fetchData() {
   // Reset progress before starting
   progressValue.value = 0
   progressText.value = '0%'
+  displayMessage.value = ''
 
   try {
     const onProgress = (progress) => {
@@ -54,8 +59,12 @@ async function fetchData() {
       await fetchBeatmapScores(parseInt(identifier.value), limit.value, onProgress)
     }
 
-    console.log("Data fetching completed successfully!")
+    // Update display message to indicate success
+    displayMessage.value = "Data fetching completed successfully!"
+    messageStyle.value = { color: 'green' }
   } catch (error) {
+    displayMessage.value = "Error fetching data. Please check the input and try again."
+    messageStyle.value = { color: 'red' }
     console.error("Error fetching data:", error)
   }
 }
