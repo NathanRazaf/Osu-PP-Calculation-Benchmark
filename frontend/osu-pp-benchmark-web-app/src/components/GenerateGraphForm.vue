@@ -1,19 +1,10 @@
 <template>
   <div class="form-container">
     <h2>Performance Points Graph Generator</h2>
-
-    <!-- Radio buttons to select mode -->
-    <div class="mode-selector">
-      <label>
-        <input type="radio" v-model="mode" value="userOrBeatmap" /> User/Beatmap
-      </label>
-      <label>
-        <input type="radio" v-model="mode" value="range" /> ActualPP range
-      </label>
-    </div>
-
+    <p>Input the username/beatmap ID or the PP range you want to generate the graph for.</p>
+    
     <!-- Form for User/Beatmap selection -->
-    <div v-if="mode === 'userOrBeatmap'" class="form-container">
+    <div class="form-container">
       <input
         v-model="identifier"
         placeholder="Enter username or beatmap ID"
@@ -24,31 +15,6 @@
         <option :value="false">Beatmap ID</option>
       </select>
     </div>
-
-    <!-- Form for Range selection -->
-  <div v-if="mode === 'range'" class="range-inputs">
-    <input
-      v-model="minPP"
-      placeholder="Min PP"
-      type="number"
-      min="0"
-      class="min-range"
-    />
-    <input
-      v-model="maxPP"
-      placeholder="Max PP"
-      type="number"
-      min="0"
-      class="max-range"
-    />
-    <input
-      v-model="limit"
-      placeholder="Limit"
-      type="number"
-      min="1"
-      class="limit-input"
-    />
-  </div>
 
     <!-- Checkbox container (common for both modes) -->
     <div class="checkbox-container">
@@ -87,14 +53,13 @@
       @load="loading = false" 
     ></iframe>
 
-    <p v-if="mode === 'userOrBeatmap'">If the data is insufficient, feel free to add some to the database by doing a query below with a higher number of scores to fetch. The maximum is 100 tho.</p>
+    <p>If the data is insufficient, feel free to add some to the database by doing a query below with a higher number of scores to fetch on the left tab.</p>
   </div>
 </template>
 
 <script setup>
 import { ref } from 'vue'
 
-const mode = ref('userOrBeatmap') // Mode toggle: 'userOrBeatmap' or 'range'
 const identifier = ref('')
 const isUsername = ref(true)
 const addOjsamaPP = ref(false)
@@ -112,11 +77,8 @@ function loadGraph() {
   loading.value = true
 
   // Generate the URL based on the selected mode
-  if (mode.value === 'userOrBeatmap') {
-    graphUrl.value = `http://127.0.0.1:5000/visualize?identifier=${identifier.value}&isUsername=${isUsername.value}&addOjsamaPP=${addOjsamaPP.value}&addRosuPP=${addRosuPP.value}&addOtpcPP=${addOtpcPP.value}&addActualPP=${addActualPP.value}`
-  } else if (mode.value === 'range') {
-    graphUrl.value = `http://127.0.0.1:5000/visualize-general?min_pp=${minPP.value}&max_pp=${maxPP.value}&limit=${limit.value}&addOjsamaPP=${addOjsamaPP.value}&addRosuPP=${addRosuPP.value}&addOtpcPP=${addOtpcPP.value}&addActualPP=${addActualPP.value}`
-  }
+  graphUrl.value = `http://127.0.0.1:5000/visualize-instance?identifier=${identifier.value}&isUsername=${isUsername.value}&addOjsamaPP=${addOjsamaPP.value}&addRosuPP=${addRosuPP.value}&addOtpcPP=${addOtpcPP.value}&addActualPP=${addActualPP.value}`
+  
 
   iframeKey.value += 1
 }
@@ -130,19 +92,6 @@ function loadGraph() {
   gap: 10px;
 }
 
-.mode-selector {
-  display: flex;
-  flex-direction: row;
-  justify-content: space-evenly;
-  gap: 20px;
-  margin-top: 10px;
-}
-
-.mode-selector input {
-  width: 20px;
-  height: 20px;
-  margin-right: 5px;
-}
 
 input {
   width: 300px;
@@ -158,46 +107,6 @@ select {
   width: auto;
   padding: 10px;
   background-color: #1e2d3d;
-  color: #fff;
-  border: none;
-  border-radius: 4px;
-  font-size: 1rem;
-}
-
-.range-inputs {
-  display: grid;
-  gap: 10px;
-  grid-template-columns: 1fr 1fr; /* Min/Max inputs take 1fr, limit takes 2fr */
-  grid-template-areas: 
-    "min-range max-range" 
-    "limit limit";
-  width: 20%; /* Shrink the width while preventing overflow */
-  margin: 0 auto; /* Center the container */
-  justify-items: center; 
-  align-items: center; 
-}
-
-.min-range,
-.max-range {
-  grid-area: min-range;
-  width: 100%; /* Shrink the inputs horizontally */
-  padding: 10px;
-  background-color: #1a3b5d;
-  color: #fff;
-  border: none;
-  border-radius: 4px;
-  font-size: 0.9rem; /* Slightly smaller text for these inputs */
-}
-
-.max-range {
-  grid-area: max-range;
-}
-
-.limit-input {
-  grid-area: limit;
-  width: 100%; /* Twice the size of the min/max inputs */
-  padding: 12px;
-  background-color: #1a3b5d;
   color: #fff;
   border: none;
   border-radius: 4px;

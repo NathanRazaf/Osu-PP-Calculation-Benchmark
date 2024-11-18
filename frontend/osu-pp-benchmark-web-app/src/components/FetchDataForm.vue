@@ -1,6 +1,7 @@
 <template>
   <div class="form-container">
-    <h2>Calculate the pp values of the top best plays of a user/beatmap</h2>
+    <h2>Fetch User/Beatmap Best Plays</h2>
+    <p>Input the username/beatmap ID you want to fetch the scores from, and choose a number of scores to fetch up to 100.</p>
     <input
       v-model="identifier"
       placeholder="Enter username or beatmap ID"
@@ -16,6 +17,7 @@
       <option :value="false">Beatmap ID</option>
     </select>
     <button @click="fetchData">Submit</button>
+    <button @click="fetchFatData">Submit</button>
 
     <p v-if="displayMessage" :style="messageStyle">{{ displayMessage }}</p>
 
@@ -30,7 +32,7 @@
 <script setup>
 import { ref } from 'vue'
 import { fetchBeatmapScores } from '../fetchers/fetch_beatmap_scores'
-import { fetchUserScores } from '../fetchers/fetch_user_scores'
+import { fetchUserScores, fetchScoresMultipleUsers } from '../fetchers/fetch_user_scores'
 
 const identifier = ref('')
 const isUsername = ref(true) // Default selection as "Username"
@@ -39,6 +41,10 @@ const progressText = ref('0%')
 const limit = ref()
 const displayMessage = ref('')
 const messageStyle = ref({})
+
+async function fetchFatData() {
+  await fetchScoresMultipleUsers(['[- Yami -]', 'SpiisSy', 'Skuppraa', 'squide', 'aerleag', 'Allan100', 'GoShinji', 'HiranMelody86', 'Nizayy', 'Mxgiwara', 'Minil', '-vile', 'Antiserum', 'ZwipFR', 'tweiste', 'thedt', 'Mugenn', 'Thornn', 'werkzu', 'Ted', 'aosora', '_2K', 'Ghsed'], 100)
+}
 
 async function fetchData() {
   // Reset progress before starting
@@ -72,7 +78,6 @@ async function fetchData() {
 
 <style scoped>
 .form-container {
-  margin-top: 30px;
   display: flex;
   flex-direction: column;
   align-items: center;

@@ -289,5 +289,37 @@ router.get('/beatmap/scores/:beatmapId/:limit', async (req, res) => {
     }
 });
 
+router.get('/country/best/:country/:page', async (req, res) => {
+    res.setHeader('Content-Type', 'text/event-stream');
+    res.setHeader('Cache-Control', 'no-cache');
+    res.setHeader('Connection', 'keep-alive');
+    res.setHeader('Access-Control-Allow-Origin', '*');
+
+    try {
+        const token = await getAccessToken();
+        const response = await axios.get(`https://osu.ppy.sh/api/v2/rankings/osu/performance`, {
+            params: { "country": req.params.country, 
+                "cursor": {
+                    "page": req.params.page
+                }
+            },
+            headers: { "Authorization": `Bearer ${token}` }
+        });
+
+        res.send(response.data).code(200);
+    } catch (error) {
+        console.error(error.message);
+        
+        if (!res.headersSent) {
+            if (error.response?.status === 404) {
+                res.write(`data: ${JSON.stringify({ message: 'Country not found' })}\n\n`);
+            } else {
+                res.write(`data: ${JSON.stringify({ message: 'Internal server error' })}\n\n`);
+            }
+            res.end();
+        }
+    }
+
+});
 
 module.exports = router;

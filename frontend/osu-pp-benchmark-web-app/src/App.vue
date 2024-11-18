@@ -1,13 +1,11 @@
 <script setup>
-import GenerateGraphForm from './components/GenerateGraphForm.vue'
-import FetchDataForm from './components/FetchDataForm.vue'
 import Header from './components/Header.vue'
 import Footer from './components/Footer.vue'
+import TabSelector from './components/TabSelector.vue';
 </script>
 
 <template>
   <Header />
-  <GenerateGraphForm />
-  <FetchDataForm />
+  <TabSelector />
   <Footer />
 </template>

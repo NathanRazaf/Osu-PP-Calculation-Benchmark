@@ -14,7 +14,6 @@
     text-align: center;
     color: #61dafb;
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-    margin-bottom: 20px;
     position: sticky;
   }
   

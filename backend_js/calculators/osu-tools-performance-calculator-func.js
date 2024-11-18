@@ -38,7 +38,7 @@ async function otpcCalculatePP(beatmapId, mods = [], accPercent = 100, combo = n
         let modsExecArray = [];
         for (let mod of mods) {
             modsExecArray.push(`-m`);
-            modsExecArray.push(mod.toLowerCase());
+            modsExecArray.push(mod.toUpperCase());
         }
 
         const execArray = [
@@ -46,7 +46,8 @@ async function otpcCalculatePP(beatmapId, mods = [], accPercent = 100, combo = n
             '-a', accPercent.toString(),
             '-c', combo.toString(),
             '-X', nmiss.toString(), 
-            ...modsExecArray
+            ...modsExecArray,
+            '-j'
         ];
 
         execFile(executablePath, execArray, (error, stdout, stderr) => {
@@ -56,19 +57,23 @@ async function otpcCalculatePP(beatmapId, mods = [], accPercent = 100, combo = n
                 return;
             }
 
-            const output = stdout.toString();
-            const ppLine = output.split('\n').find(line => line.includes('pp'));
-
-            if (ppLine) {
-                const ppValue = parseFloat(ppLine.split(':')[1].trim());
-                console.log(`otpc: Executing: ${execArray.join(' ')}`);
-                console.log(`PP: ${ppValue.toFixed(3)}`);
-                deleteCacheFile(beatmapId);
-
-                resolve(ppValue.toFixed(3));
-            } else {
-                console.log("PP value not found in output.");
-                reject(new Error("PP value not found in output."));
+            
+            try {
+                // Take stdout and remove the first line if it contains "Downloading"
+                const lines = stdout.split('\n');
+                if (lines[0].includes('Downloading')) {
+                    lines.shift();
+                }
+                stdout = lines.join('\n');
+                const jsonOutput = JSON.parse(stdout); // Parse JSON from stdout
+                if (jsonOutput?.performance_attributes?.pp) {
+                    resolve(jsonOutput.performance_attributes.pp);
+                } else {
+                    reject(new Error("PP value not found in JSON output."));
+                }
+            } catch (err) {
+                console.error("Failed to parse JSON output:", err.message);
+                reject(err);
             }
         });
     });
