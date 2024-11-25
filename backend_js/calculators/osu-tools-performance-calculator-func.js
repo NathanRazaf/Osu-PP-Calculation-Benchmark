@@ -1,7 +1,6 @@
 const { execFile } = require('child_process');
 const path = require('path');
 const fs = require('fs');
-const { json } = require('express');
 
 
 // Helper function to delete cached beatmap file
@@ -66,6 +65,7 @@ async function otpcCalculatePP(beatmapId, mods = [], accPercent = 100, combo = n
                 }
                 stdout = lines.join('\n');
                 const jsonOutput = JSON.parse(stdout); // Parse JSON from stdout
+                removeCacheFile(beatmapId); // Delete cached beatmap file
                 if (jsonOutput?.performance_attributes?.pp) {
                     resolve(jsonOutput.performance_attributes.pp);
                 } else {
