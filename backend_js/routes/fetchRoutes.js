@@ -4,9 +4,9 @@ const { getAccessToken } = require('../authentication/token');
 const { ojsamaCalculatePP } = require('../calculators/ojsama-func');
 const { rosuCalculatePP } = require('../calculators/rosu-pp-js-func');
 const { otpcCalculatePP } = require('../calculators/osu-tools-performance-calculator-func');
-const mongoose = require('mongoose');
-const Score = require('../mongo_models/scoreModel');
-const PlayData = require('../mongo_models/playDataModel');
+const { addPlayData } = require('./fetchServices');
+const UserScores = require('../mongo_models/userScoreModel');
+const BeatmapScores = require('../mongo_models/beatmapScoreModel');
 
 const router = express.Router();
 
@@ -29,7 +29,6 @@ router.get('/user/scores/:username/:limit', async (req, res) => {
             params: { "mode": "osu", "limit": req.params.limit || 10 },
             headers: { "Authorization": `Bearer ${token}` }
         });
-        const finalRes = [];
         let i = 0;
 
         for (let item of response.data) {
@@ -47,7 +46,13 @@ router.get('/user/scores/:username/:limit', async (req, res) => {
             const nmiss = item.statistics.count_miss;
 
             // Vérifier si le playId est déjà dans la base de données pour éviter le recalcul
-            let existingScore = await Score.findOne({ playId: playId });
+            let user = await UserScores.findOne({ username : username });
+            let existingScore = null;
+            if (user) {
+                existingScore = user.scores.find(score => score.playId === playId);
+            } else {
+                user = new UserScores({ username: username, scores: [] });
+            }
             let ojsamaPP, rosuPP, otpcPP;
 
             if (existingScore) {
@@ -63,69 +68,28 @@ router.get('/user/scores/:username/:limit', async (req, res) => {
                     otpcCalculatePP(beatmapId, mods, accPercent, combo, nmiss)
                 ]);
 
+                console.log(`ojsamaPP: ${ojsamaPP}, rosuPP: ${rosuPP}, otpcPP: ${otpcPP}`);
+                // Ne pas ajouter les scores avec des valeurs de PP nulles ou NaN
+                if (ojsamaPP === null || rosuPP === null || otpcPP === null || isNaN(ojsamaPP) || isNaN(rosuPP) || isNaN(otpcPP)) {
+                    console.log(`Skipping score with playId ${playId}`);
+                    i++;
+                    continue;
+                }
+
                 // Enregistrer dans la base de données pour éviter les recalculs futurs
-                if (item.pp === null) {console.log(item);}
-                const newScore = new Score({
+                await user.addScore({
                     playId: playId,
                     beatmapId: beatmapId,
-                    username: username,
                     score: score,
                     ojsamaPP: ojsamaPP,
                     rosuPP: rosuPP,
                     otpcPP: otpcPP,
                     actualPP: item.pp
                 });
-                await newScore.save();
                 console.log(`Score with playId ${playId} saved to database`);
             }
 
-            finalRes.push(
-                { beatmap: 
-                    {
-                        beatmapId: beatmapId,
-                        mods: mods,
-                        accPercent: accPercent.toFixed(2),
-                        score: score,
-                        combo: combo,
-                        nmiss: nmiss,
-                        hitJudgement: item.beatmap.accuracy,
-                        approachRate: item.beatmap.ar,
-                        circleSize: item.beatmap.cs,
-                        drainRate: item.beatmap.drain,
-                        rating: item.beatmap.difficulty_rating,
-                    }, 
-                    playId: playId,
-                    ojsamaPP: ojsamaPP, 
-                    rosuPP: rosuPP, 
-                    otpcPP: otpcPP, 
-                    actualPP: item.pp 
-                }
-            );
-
-            const maybePlay = await PlayData.findOne({ playId: playId });
-            if (!maybePlay) {
-                const newPlay = new PlayData({
-                    playId: playId,
-                    actualPP: item.pp,
-                    accPercent: accPercent,
-                    combo: combo,
-                    nmiss: nmiss,
-                    hitJudgement: item.beatmap.accuracy,
-                    approachRate: item.beatmap.ar,
-                    circleSize: item.beatmap.cs,
-                    drainRate: item.beatmap.drain,
-                    rating: item.beatmap.difficulty_rating,
-                    EZ: mods.includes('EZ'),
-                    HT: mods.includes('HT'),
-                    HD: mods.includes('HD'),
-                    DT: mods.includes('DT'),
-                    NC: mods.includes('NC'),
-                    HR: mods.includes('HR'),
-                    FL: mods.includes('FL')
-                });
-                await newPlay.save();
-                console.log(`Play with playId ${playId} saved to database`);
-            }
+            await addPlayData(playId, item);
 
             const progress = ((i + 1) / req.params.limit) * 100;
             res.write(`data: ${JSON.stringify({ progress: progress.toFixed(2) })}\n\n`);
@@ -133,6 +97,8 @@ router.get('/user/scores/:username/:limit', async (req, res) => {
             i++;
         }
 
+        // Return the user document with the updated scores
+        const finalRes = await UserScores.findOne({ username : username });
         res.write(`data: ${JSON.stringify({ message: "Finished processing", results: finalRes })}\n\n`);
         res.end();
     } catch (error) {
@@ -159,16 +125,14 @@ router.get('/beatmap/scores/:beatmapId/:limit', async (req, res) => {
 
     try {
         const token = await getAccessToken();
-        const response = await axios.get(`https://osu.ppy.sh/api/v2/beatmaps/${req.params.beatmapId}/scores`, {
+        const beatmapId = req.params.beatmapId;
+        const response = await axios.get(`https://osu.ppy.sh/api/v2/beatmaps/${beatmapId}/scores`, {
             params: { "mode": "osu" },
             headers: { "Authorization": `Bearer ${token}` }
         });
         const limit = Math.min(req.params.limit || 10, 50);
         const scores = response.data.scores.slice(0, limit);  
-        const finalRes = [];
-        const beatmap = await axios.get(`https://osu.ppy.sh/api/v2/beatmaps/${req.params.beatmapId}`, {
-            headers: { "Authorization": `Bearer ${token}` }
-        });
+        
         let i = 0;
 
         for (let item of scores) {
@@ -184,9 +148,16 @@ router.get('/beatmap/scores/:beatmapId/:limit', async (req, res) => {
             const accPercent = item.accuracy * 100;
             const combo = item.max_combo;
             const nmiss = item.statistics.count_miss;
+            
 
             // Vérifier si le playId est déjà dans la base de données pour éviter le recalcul
-            let existingScore = await Score.findOne({ playId: playId });
+            let beatmap = await BeatmapScores.findOne({ beatmapId : beatmapId });
+            let existingScore = null;
+            if (beatmap) {
+                existingScore = beatmap.scores.find(score => score.playId === playId);
+            } else {
+                beatmap = new UserScores({ username: username, scores: [] });
+            }
             let ojsamaPP, rosuPP, otpcPP;
 
             if (existingScore) {
@@ -197,15 +168,22 @@ router.get('/beatmap/scores/:beatmapId/:limit', async (req, res) => {
             } else {
                 // Calculer PP si les données n'existent pas dans la base de données
                 [ojsamaPP, rosuPP, otpcPP] = await Promise.all([
-                    ojsamaCalculatePP(req.params.beatmapId, mods, accPercent, combo, nmiss),
-                    rosuCalculatePP(req.params.beatmapId, mods, accPercent, combo, nmiss),
-                    otpcCalculatePP(req.params.beatmapId, mods, accPercent, combo, nmiss)
+                    ojsamaCalculatePP(beatmapId, mods, accPercent, combo, nmiss),
+                    rosuCalculatePP(beatmapId, mods, accPercent, combo, nmiss),
+                    otpcCalculatePP(beatmapId, mods, accPercent, combo, nmiss)
                 ]);
 
+                // Ne pas ajouter les scores avec des valeurs de PP nulles ou NaN
+                if (ojsamaPP === null || rosuPP === null || otpcPP === null || isNaN(ojsamaPP) || isNaN(rosuPP) || isNaN(otpcPP)) {
+                    console.log(`Skipping score with playId ${playId}`);
+                    i++;
+                    continue;
+                }
+
+
                 // Enregistrer dans la base de données pour éviter les recalculs futurs
-                const newScore = new Score({
+                await beatmap.addScore({
                     playId: playId,
-                    beatmapId: req.params.beatmapId,
                     username: username,
                     score: score,
                     ojsamaPP: ojsamaPP,
@@ -213,59 +191,11 @@ router.get('/beatmap/scores/:beatmapId/:limit', async (req, res) => {
                     otpcPP: otpcPP,
                     actualPP: item.pp
                 });
-                await newScore.save();
                 console.log(`Score with playId ${playId} saved to database`);
             }
 
-            finalRes.push(
-                { beatmap: 
-                    {
-                        beatmapId: req.params.beatmapId,
-                        mods: mods,
-                        accPercent: accPercent.toFixed(2),
-                        score: score,
-                        combo: combo,
-                        nmiss: nmiss,
-                        hitJudgement: beatmap.data.accuracy,
-                        approachRate: beatmap.data.ar,
-                        circleSize: beatmap.data.cs,
-                        drainRate: beatmap.data.drain,
-                        rating: beatmap.data.difficulty_rating,
-                    }, 
-                    username: username,
-                    playId: playId,
-                    ojsamaPP: ojsamaPP, 
-                    rosuPP: rosuPP, 
-                    otpcPP: otpcPP, 
-                    actualPP: item.pp 
-                }
-            );
-
             // Vérifier si le playId est déjà dans la collection PlayData
-            const maybePlay = await PlayData.findOne({ playId: playId });
-            if (!maybePlay) {
-                const newPlay = new PlayData({
-                    playId: playId,
-                    actualPP: item.pp,
-                    accPercent: accPercent,
-                    combo: combo,
-                    nmiss: nmiss,
-                    hitJudgement: beatmap.data.accuracy,
-                    approachRate: beatmap.data.ar,
-                    circleSize: beatmap.data.cs,
-                    drainRate: beatmap.data.drain,
-                    rating: beatmap.data.difficulty_rating,
-                    EZ: mods.includes('EZ'),
-                    HT: mods.includes('HT'),
-                    HD: mods.includes('HD'),
-                    DT: mods.includes('DT'),
-                    NC: mods.includes('NC'),
-                    HR: mods.includes('HR'),
-                    FL: mods.includes('FL')
-                });
-                await newPlay.save();
-                console.log(`Play with playId ${playId} saved to database`);
-            }
+            await addPlayData(playId, item);
 
             const progress = ((i + 1) / limit) * 100;
             res.write(`data: ${JSON.stringify({ progress: progress.toFixed(2) })}\n\n`);
@@ -273,6 +203,8 @@ router.get('/beatmap/scores/:beatmapId/:limit', async (req, res) => {
             i++;
         }
 
+        // Return the beatmap document with the updated scores
+        const finalRes = await BeatmapScores.findOne({ beatmapId: beatmapId });
         res.write(`data: ${JSON.stringify({ message: "Finished processing", results: finalRes })}\n\n`);
         res.end();
     } catch (error) {

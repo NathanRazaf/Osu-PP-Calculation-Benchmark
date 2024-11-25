@@ -1,6 +1,5 @@
 const axios = require('axios');
 const osu = require('ojsama');
-const Score = require('../mongo_models/scoreModel');
 
 
 async function fetchBeatmap(beatmapId) {

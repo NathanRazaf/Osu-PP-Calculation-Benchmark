@@ -1,7 +1,7 @@
 const { execFile } = require('child_process');
 const path = require('path');
 const fs = require('fs');
-const Score = require('../mongo_models/scoreModel');
+const { json } = require('express');
 
 
 // Helper function to delete cached beatmap file

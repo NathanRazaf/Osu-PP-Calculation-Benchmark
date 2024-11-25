@@ -1,6 +1,5 @@
 const axios = require('axios');
 const rosu = require("rosu-pp-js");
-const Score = require('../mongo_models/scoreModel');
 
 
 async function fetchBeatmap(beatmapId) {

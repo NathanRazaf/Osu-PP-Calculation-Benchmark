@@ -1,20 +1,14 @@
 import pandas as pd
 import plotly.graph_objects as go
-from db import collection
+from db import db
 
 def plot_pp_instance(identifier, is_username, addOjsamaPP=False, addRosuPP=False, addOtpcPP=False, addActualPP=True):
     query = {'username': identifier} if is_username else {'beatmapId': int(identifier)}
-    cursor = collection.find(query)
-    data = pd.DataFrame(list(cursor))
+    cursor = db['userscores' if is_username else 'beatmapscores'].find_one(query)
+    data = pd.DataFrame(list(cursor['scores']))
 
     if data.empty:
         return None
-
-    # Sort data
-    data = data.sort_values('actualPP', ascending=False)
-
-    # Limit data size to 200 plays
-    data = data.head(200)
 
     # Remove outliers
     max_pp = max(data['actualPP'])
