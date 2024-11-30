@@ -1,6 +1,5 @@
 const axios = require('axios');
 const rosu = require("rosu-pp-js");
-const Score = require('../mongo_models/scoreModel');
 
 
 async function fetchBeatmap(beatmapId) {
@@ -28,7 +27,7 @@ async function rosuCalculatePP(beatmapId, mods = [], accPercent = 100, combo = n
 
         map.free();
 
-        const ppValue = currAttrs.pp.toFixed(3);
+        const ppValue = parseFloat(currAttrs.pp.toFixed(3));
 
         return ppValue;
     } catch (error) {

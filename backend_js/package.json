@@ -17,6 +17,7 @@
     "express": "^4.21.1",
     "mongoose": "^8.8.1",
     "ojsama": "^2.2.0",
+    "p-limit": "^6.1.0",
     "rosu-pp-js": "^1.1.1"
   }
 }

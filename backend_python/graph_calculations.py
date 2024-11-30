@@ -1,20 +1,18 @@
 import pandas as pd
 import plotly.graph_objects as go
-from db import collection
+from db import db
+from flask import jsonify
 
-def plot_pp_instance(identifier, is_username, addOjsamaPP=False, addRosuPP=False, addOtpcPP=False, addActualPP=True):
+def get_pp_data(identifier, is_username, addOjsamaPP=False, addRosuPP=False, addOtpcPP=False, addActualPP=True):
     query = {'username': identifier} if is_username else {'beatmapId': int(identifier)}
-    cursor = collection.find(query)
-    data = pd.DataFrame(list(cursor))
+    cursor = db['userscores' if is_username else 'beatmapscores'].find_one(query)
+    if cursor is None:
+        return jsonify({"message": "No data found"}), 404
+    
+    data = pd.DataFrame(list(cursor['scores']))
 
     if data.empty:
-        return None
-
-    # Sort data
-    data = data.sort_values('actualPP', ascending=False)
-
-    # Limit data size to 200 plays
-    data = data.head(200)
+        return jsonify({"message": "No data found"}), 404
 
     # Remove outliers
     max_pp = max(data['actualPP'])
@@ -23,33 +21,20 @@ def plot_pp_instance(identifier, is_username, addOjsamaPP=False, addRosuPP=False
     pp_min = min(data['ojsamaPP'].min(), data['rosuPP'].min(), data['otpcPP'].min(), data['actualPP'].min()) - 50
     pp_cap = max(max_pp, data['ojsamaPP'].max(), data['rosuPP'].max(), data['otpcPP'].max()) + 50
 
-    # Plotting
-    fig = go.Figure()
-    if addOjsamaPP:
-        fig.add_trace(go.Scatter(x=data['playIndex'], y=data['ojsamaPP'], mode='lines+markers', name='ojsamaPP', line=dict(color='blue')))
-    if addRosuPP:
-        fig.add_trace(go.Scatter(x=data['playIndex'], y=data['rosuPP'], mode='lines+markers', name='rosuPP', line=dict(color='red')))
-    if addOtpcPP:
-        fig.add_trace(go.Scatter(x=data['playIndex'], y=data['otpcPP'], mode='lines+markers', name='otpcPP', line=dict(color='purple')))
-    if addActualPP:
-        fig.add_trace(go.Scatter(
-            x=data['playIndex'],
-            y=data['actualPP'],
-            mode='lines+markers',
-            name='actualPP',
-            line=dict(width=4, color='limegreen'),        
-            marker=dict(size=8, color='limegreen'),      
-        ))
-
-    fig.update_layout(
-        title=f"Performance Points Calculation Comparison for {'User' if is_username else 'Beatmap'} {identifier}",
-        xaxis_title="Play Rank",
-        yaxis_title="Performance Points (PP)",
-        yaxis=dict(range=[pp_min, pp_cap]),
-        autosize=True,
-        hovermode="x unified",
-        template="plotly_dark"
-    )
-
-    return fig.to_html(full_html=False)
+    # Return the jsonified data
+    final_data = {
+        "playIndex": list(data['playIndex']),
+        "ojsamaPP": list(data['ojsamaPP']),
+        "rosuPP": list(data['rosuPP']),
+        "otpcPP": list(data['otpcPP']),
+        "actualPP": list(data['actualPP']),
+        "pp_min": pp_min,
+        "pp_cap": pp_cap,
+        "addOjsamaPP": addOjsamaPP,
+        "addRosuPP": addRosuPP,
+        "addOtpcPP": addOtpcPP,
+        "addActualPP": addActualPP,
+    }
+    
+    return jsonify(final_data)
 

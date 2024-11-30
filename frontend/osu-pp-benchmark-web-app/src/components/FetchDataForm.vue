@@ -64,7 +64,7 @@ async function fetchData() {
     } else {
       await fetchBeatmapScores(parseInt(identifier.value), limit.value, onProgress)
     }
-
+    
     // Update display message to indicate success
     displayMessage.value = "Data fetching completed successfully!"
     messageStyle.value = { color: 'green' }
