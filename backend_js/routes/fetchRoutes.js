@@ -10,6 +10,8 @@ const BeatmapScores = require('../mongo_models/beatmapScoreModel');
 
 const router = express.Router();
 
+const statsUpdaterRoute = "http://127.0.0.1:5000/stats/update";
+
 router.get('/user/scores/:username/:limit', async (req, res) => {
     res.setHeader('Content-Type', 'text/event-stream');
     res.setHeader('Cache-Control', 'no-cache');
@@ -30,6 +32,8 @@ router.get('/user/scores/:username/:limit', async (req, res) => {
             headers: { "Authorization": `Bearer ${token}` }
         });
         let i = 0;
+        
+        const finalRes = [];
 
         for (let item of response.data) {
             if (item.pp === null) {
@@ -86,7 +90,21 @@ router.get('/user/scores/:username/:limit', async (req, res) => {
                     otpcPP: otpcPP,
                     actualPP: item.pp
                 });
-                console.log(`Score with playId ${playId} saved to database`);
+
+                // Push the score to the final response in a simplified format if it's not already in the database
+                const obj = {
+                    beatmapId: beatmapId,
+                    playId: playId,
+                    ojsamaPP: ojsamaPP,
+                    rosuPP: rosuPP,
+                    otpcPP: otpcPP,
+                    actualPP: item.pp
+                    };
+                finalRes.push(obj);
+
+                // Call the stats updater route to update the stats, with obj as the body
+                const statsUpdateResponse = await axios.post(statsUpdaterRoute, obj);
+                console.log(statsUpdateResponse.data);
             }
 
             await addPlayData(playId, item);
@@ -97,8 +115,7 @@ router.get('/user/scores/:username/:limit', async (req, res) => {
             i++;
         }
 
-        // Return the user document with the updated scores
-        const finalRes = await UserScores.findOne({ username : username });
+        // Return the final response
         res.write(`data: ${JSON.stringify({ message: "Finished processing", results: finalRes })}\n\n`);
         res.end();
     } catch (error) {
@@ -134,6 +151,7 @@ router.get('/beatmap/scores/:beatmapId/:limit', async (req, res) => {
         const scores = response.data.scores.slice(0, limit);  
         
         let i = 0;
+        const finalRes = [];
 
         for (let item of scores) {
             if (item.pp === null) { 
@@ -191,7 +209,6 @@ router.get('/beatmap/scores/:beatmapId/:limit', async (req, res) => {
                     otpcPP: otpcPP,
                     actualPP: item.pp
                 });
-                console.log(`Score with playId ${playId} saved to database`);
             }
 
             // Vérifier si le playId est déjà dans la collection PlayData
@@ -201,10 +218,25 @@ router.get('/beatmap/scores/:beatmapId/:limit', async (req, res) => {
             res.write(`data: ${JSON.stringify({ progress: progress.toFixed(2) })}\n\n`);
             console.log(`BeatmapId: ${req.params.beatmapId}, Ojsama PP: ${ojsamaPP}, Rosu PP: ${rosuPP}, OTPC PP: ${otpcPP}, Actual PP: ${item.pp}\n\n`);
             i++;
+
+            // Push the score to the final response in a simplified format
+            const obj = {
+                beatmapId: beatmapId,
+                playId: playId,
+                ojsamaPP: ojsamaPP,
+                rosuPP: rosuPP,
+                otpcPP: otpcPP,
+                actualPP: item.pp
+                };
+            finalRes.push(obj);
+
+            // Call the stats updater route to update the stats, with obj as the body
+            console.log("Calling stats updater route");
+            const statsUpdateResponse = await axios.post(statsUpdaterRoute, obj);
+            console.log(statsUpdateResponse.data);
         }
 
-        // Return the beatmap document with the updated scores
-        const finalRes = await BeatmapScores.findOne({ beatmapId: beatmapId });
+        // Return the final response with the scores in a simplified format
         res.write(`data: ${JSON.stringify({ message: "Finished processing", results: finalRes })}\n\n`);
         res.end();
     } catch (error) {
