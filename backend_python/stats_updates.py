@@ -1,6 +1,7 @@
 from pymongo import UpdateOne
 from graph_mongo_models.statsGraphModels import ErrorStatsModel, OutlierDistributionGraphModel, OutlierModel
 from datetime import datetime   
+from concurrent.futures import ThreadPoolExecutor
 
 def update_stats_on_all_ranges(newDoc):
     actualPP = newDoc['actualPP']
@@ -14,15 +15,26 @@ def update_stats_on_all_ranges(newDoc):
             if i < j and i <= actualPP < j:
                 finalRanges.append((i, j))
 
-    thresholds = [i*200 for i in range(1, 5)] # From 200 to 800
-    # Prepare bulk operations
-    error_updates = []
-    outlier_updates = []
+    thresholds = [i * 200 for i in range(1, 5)]  # From 200 to 800
 
-    for minPP, maxPP in finalRanges:
-        error_updates.append(update_error_stats_bulk(newDoc, minPP, maxPP))
-        for errThreshold in thresholds:
-            outlier_updates.append(update_outlier_stats_bulk(newDoc, minPP, maxPP, errThreshold))
+    # Use ThreadPoolExecutor for parallel processing
+    with ThreadPoolExecutor() as executor:
+        # Prepare tasks for error stats
+        error_futures = [
+            executor.submit(update_error_stats_bulk, newDoc, minPP, maxPP)
+            for minPP, maxPP in finalRanges
+        ]
+
+        # Prepare tasks for outlier stats
+        outlier_futures = [
+            executor.submit(update_outlier_stats_bulk, newDoc, minPP, maxPP, threshold)
+            for minPP, maxPP in finalRanges
+            for threshold in thresholds
+        ]
+
+        # Collect results for bulk write
+        error_updates = [future.result() for future in error_futures]
+        outlier_updates = [future.result() for future in outlier_futures]
 
     # Perform bulk operations
     if error_updates:
