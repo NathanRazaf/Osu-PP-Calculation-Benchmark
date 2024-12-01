@@ -10,6 +10,7 @@ def get_errors_data(min_pp, max_pp):
         error_stats = ErrorStatsModel.objects(minPp=min_pp, maxPp=max_pp).get()
         error_dict = error_stats.to_mongo().to_dict()
         error_dict['_id'] = str(error_dict['_id'])
+        return jsonify(error_dict)
     except DoesNotExist:
         return jsonify({ "message": "No data found" }), 404
     

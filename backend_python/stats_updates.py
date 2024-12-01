@@ -6,14 +6,10 @@ from concurrent.futures import ThreadPoolExecutor
 def update_stats_on_all_ranges(newDoc):
     actualPP = newDoc['actualPP']
 
-    finalRanges = []
-    increments = list(range(0, 1001, 200)) + [100000]
-
-    # Generate all the ranges the actualPP falls into
-    for i in increments:
-        for j in increments:
-            if i < j and i <= actualPP < j:
-                finalRanges.append((i, j))
+    # Get the 200-sized bucket in which the actual PP falls
+    minPP = actualPP // 200 * 200
+    maxPP = minPP + 200
+    finalRanges = [(minPP, maxPP), (0, 100000)]  # For the actual PP and the entire range
 
     thresholds = [i * 200 for i in range(1, 5)]  # From 200 to 800
 
