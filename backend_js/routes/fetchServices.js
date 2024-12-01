@@ -1,6 +1,6 @@
 const PlayData = require('../mongo_models/playDataModel.js');
 
-async function addPlayData(playId, item) {
+async function addPlayDataUser(playId, item) {
     const mods = item.mods;
     const maybePlay = await PlayData.findOne({ playId: playId });
     if (!maybePlay) {
@@ -30,4 +30,4 @@ async function addPlayData(playId, item) {
 
 
 
-module.exports = { addPlayData };
+module.exports = { addPlayDataUser };

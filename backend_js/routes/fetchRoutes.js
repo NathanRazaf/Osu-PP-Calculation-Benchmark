@@ -4,7 +4,7 @@ const { getAccessToken } = require('../authentication/token');
 const { ojsamaCalculatePP } = require('../calculators/ojsama-func');
 const { rosuCalculatePP } = require('../calculators/rosu-pp-js-func');
 const { otpcCalculatePP } = require('../calculators/osu-tools-performance-calculator-func');
-const { addPlayData } = require('./fetchServices');
+const { addPlayDataUser } = require('./fetchServices');
 const UserScores = require('../mongo_models/userScoreModel');
 const BeatmapScores = require('../mongo_models/beatmapScoreModel');
 
@@ -107,7 +107,7 @@ router.get('/user/scores/:username/:limit', async (req, res) => {
                 console.log(statsUpdateResponse.data);
             }
 
-            await addPlayData(playId, item);
+            await addPlayDataUser(playId, item);
 
             const progress = ((i + 1) / req.params.limit) * 100;
             res.write(`data: ${JSON.stringify({ progress: progress.toFixed(2) })}\n\n`);
@@ -174,7 +174,7 @@ router.get('/beatmap/scores/:beatmapId/:limit', async (req, res) => {
             if (beatmap) {
                 existingScore = beatmap.scores.find(score => score.playId === playId);
             } else {
-                beatmap = new UserScores({ username: username, scores: [] });
+                beatmap = new BeatmapScores({ beatmapId : beatmapId, scores: [] });
             }
             let ojsamaPP, rosuPP, otpcPP;
 
@@ -184,6 +184,7 @@ router.get('/beatmap/scores/:beatmapId/:limit', async (req, res) => {
                 rosuPP = existingScore.rosuPP;
                 otpcPP = existingScore.otpcPP;
             } else {
+                console.log(`Cache miss for playId ${playId}`);
                 // Calculer PP si les données n'existent pas dans la base de données
                 [ojsamaPP, rosuPP, otpcPP] = await Promise.all([
                     ojsamaCalculatePP(beatmapId, mods, accPercent, combo, nmiss),
@@ -209,31 +210,30 @@ router.get('/beatmap/scores/:beatmapId/:limit', async (req, res) => {
                     otpcPP: otpcPP,
                     actualPP: item.pp
                 });
-            }
 
-            // Vérifier si le playId est déjà dans la collection PlayData
-            await addPlayData(playId, item);
+                // Push the score to the final response in a simplified format
+                const obj = {
+                    beatmapId: beatmapId,
+                    playId: playId,
+                    ojsamaPP: ojsamaPP,
+                    rosuPP: rosuPP,
+                    otpcPP: otpcPP,
+                    actualPP: item.pp
+                    };
+                finalRes.push(obj);
+
+                // Call the stats updater route to update the stats, with obj as the body
+                console.log("Calling stats updater route");
+                const statsUpdateResponse = await axios.post(statsUpdaterRoute, obj);
+                console.log(statsUpdateResponse.data);
+            }
 
             const progress = ((i + 1) / limit) * 100;
             res.write(`data: ${JSON.stringify({ progress: progress.toFixed(2) })}\n\n`);
             console.log(`BeatmapId: ${req.params.beatmapId}, Ojsama PP: ${ojsamaPP}, Rosu PP: ${rosuPP}, OTPC PP: ${otpcPP}, Actual PP: ${item.pp}\n\n`);
             i++;
 
-            // Push the score to the final response in a simplified format
-            const obj = {
-                beatmapId: beatmapId,
-                playId: playId,
-                ojsamaPP: ojsamaPP,
-                rosuPP: rosuPP,
-                otpcPP: otpcPP,
-                actualPP: item.pp
-                };
-            finalRes.push(obj);
-
-            // Call the stats updater route to update the stats, with obj as the body
-            console.log("Calling stats updater route");
-            const statsUpdateResponse = await axios.post(statsUpdaterRoute, obj);
-            console.log(statsUpdateResponse.data);
+            
         }
 
         // Return the final response with the scores in a simplified format

@@ -8,26 +8,16 @@ from datetime import datetime
 def update_stats_on_all_ranges(newDoc):
     actualPP = newDoc['actualPP']
 
-    # Calculate the upper bound (the actualPP rounded up to the nearest 100)
-    lower = min(actualPP//200 * 200, 1000)
-    # All the ranges with 200pp increments starting at the lower bound
-    ranges = [(lower, lower + 200 * i) for i in range(1, 6) if lower + 200 * i <= 1000]
-    ranges.append((int(lower), 100000))
+    finalRanges = []
+    increments = list(range(0, 1001, 200)) + [100000]
 
+    # Generate all the ranges the actualPP falls into
+    for i in increments:
+        for j in increments:
+            if i < j and i <= actualPP < j:
+                finalRanges.append((i, j))
 
-    upper = -(-actualPP // 200) * 200
-
-    # Create all the ranges and thresholds to update
-    ranges2 = [(i*200, upper if upper <= 1000 else 100000) for i in range(min(int(upper/200), 6))]
     thresholds = [i*200 for i in range(1, 5)] # From 200 to 800
-
-    finalRanges = ranges + ranges2
-    # Remove duplicates
-    finalRanges = list(set(finalRanges))
-    # Convert to int
-    finalRanges = [(int(minPP), int(maxPP)) for minPP, maxPP in finalRanges]
-
-    print("New doc:", newDoc)
     # Prepare bulk operations
     error_updates = []
     outlier_updates = []
@@ -58,7 +48,7 @@ def update_error_stats_bulk(newDoc, minPP, maxPP):
         mbe = [actualPP - newDoc[calc] for calc in calculators]
 
         return UpdateOne(
-            {'minPp': minPP, 'maxPp': maxPP},  # Filter
+            {'minPp': minPP, 'maxPp': maxPP}, 
             {
                 '$setOnInsert': {
                     'minPp': minPP,
@@ -105,8 +95,8 @@ def update_error_stats_bulk(newDoc, minPP, maxPP):
                     'mae': new_mae,
                     'rmse': new_rmse,
                     'mbe': new_mbe,
-                    'dataSize': dataSize + 1
                 },
+                '$inc': {'dataSize': 1}
             }
         )
 

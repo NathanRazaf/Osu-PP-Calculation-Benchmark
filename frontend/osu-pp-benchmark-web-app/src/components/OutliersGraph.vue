@@ -38,7 +38,7 @@
           y: ojsamaData.map(outlier => outlier.error),
           mode: 'markers',
           type: 'scatter',
-          name: 'ojsamaPP',
+          name: `ojsamaPP (count: ${ojsamaData.length})`,
           marker: { color: 'red' },
           showlegend: true
         },
@@ -47,7 +47,7 @@
           y: otpcData.map(outlier => outlier.error),
           mode: 'markers',
           type: 'scatter',
-          name: 'otpcPP',
+          name: `otpcPP (count: ${otpcData.length})`,
           marker: { color: 'blue' },
           showlegend: true
         },
@@ -56,7 +56,7 @@
           y: rosuData.map(outlier => outlier.error),
           mode: 'markers',
           type: 'scatter',
-          name: 'rosuPP',
+          name: `rosuPP (count: ${rosuData.length})`,
           marker: { color: 'green' },
           showlegend: true
         }
