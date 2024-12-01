@@ -10,7 +10,7 @@ const BeatmapScores = require('../mongo_models/beatmapScoreModel');
 
 const router = express.Router();
 
-const statsUpdaterRoute = "http://127.0.0.1:5000/stats/update";
+const statsUpdaterRoute = "https://osu-statistics-fetcher.onrender.com/stats/update";
 
 router.get('/user/scores/:username/:limit', async (req, res) => {
     res.setHeader('Content-Type', 'text/event-stream');
