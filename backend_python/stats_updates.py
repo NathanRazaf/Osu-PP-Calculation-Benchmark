@@ -51,7 +51,7 @@ def update_error_stats_bulk(newDoc, minPP, maxPP):
     error_stat = ErrorStatsModel.objects(minPp=minPP, maxPp=maxPP).modify(
         upsert=True,
         new=True,
-        set_on_insert={'minPp': minPP, 'maxPp': maxPP, 'createdAt': datetime.now(), 'dataSize': 0, 'mae': [0] * 3, 'rmse': [0] * 3, 'mbe': [0] * 3},
+        set_on_insert={'minPp': minPP, 'maxPp': maxPP, 'createdAt': datetime.now(), 'dataSize': 0, 'mae': [0,0,0], 'rmse': [0,0,0], 'mbe': [0,0,0]},
     )
 
     dataSize = error_stat.dataSize
