@@ -51,6 +51,8 @@ async function otpcCalculatePP(beatmapId, mods = [], accPercent = 100, combo = n
                 const jsonOutput = JSON.parse(stdout); // Parse JSON from stdout
                 deleteCacheFile(beatmapId); // Delete cached beatmap file
                 if (jsonOutput?.performance_attributes?.pp) {
+                    console.log(`Executing PerformanceCalculator with beatmapId: ${beatmapId}, mods: ${mods}, acc: ${accPercent}, combo: ${combo}, nmiss: ${nmiss}`);
+                    console.log(`PP: ${parseFloat(jsonOutput.performance_attributes.pp.toFixed(3))}`);
                     resolve(parseFloat(jsonOutput.performance_attributes.pp.toFixed(3)));
                 } else {
                     reject(new Error("PP value not found in JSON output."));
