@@ -133,8 +133,8 @@ def update_outlier_stats_bulk(newDoc, minPP, maxPP, errThreshold):
     ]
 
     # Build the UpdateOne operation
-    
-    if OutlierDistributionGraphModel.objects(minPp=minPP, maxPp=maxPP, errorThreshold=errThreshold).count() == 0:
+    outlier_stat = OutlierDistributionGraphModel.objects(minPp=minPP, maxPp=maxPP, errorThreshold=errThreshold).first()
+    if outlier_stat is None:
         return UpdateOne(
             {'minPp': minPP, 'maxPp': maxPP, 'errorThreshold': errThreshold},  # Filter
             {
@@ -150,20 +150,23 @@ def update_outlier_stats_bulk(newDoc, minPP, maxPP, errThreshold):
             upsert=True  # Create document if it doesn't exist
         )
     
+    # Get the two lists of outliers and update them in Python for more efficient sorting
+    top200best = outlier_stat.top200best
+    top200worst = outlier_stat.top200worst
+
+    top200best.extend(new_outliers)
+    top200worst.extend(new_outliers)
+
+    top200best = sorted(top200best, key=lambda x: x['error'])[:200]  # Sort by ascending error
+    top200worst = sorted(top200worst, key=lambda x: -x['error'])[:200]  # Sort by descending error
+    
     return UpdateOne(
         {'minPp': minPP, 'maxPp': maxPP, 'errorThreshold': errThreshold},  # Filter
         {
-            '$push': {
-                'top200best': {
-                    '$each': new_outliers,
-                    '$slice': 200,  # Keep only the top 200 best entries
-                    '$sort': {'error': 1}  # Sort by ascending error
-                },
-                'top200worst': {
-                    '$each': new_outliers,
-                    '$slice': 200,  # Keep only the top 200 worst entries
-                    '$sort': {'error': -1}  # Sort by descending error
-                }
+            '$set': {
+                'createdAt': datetime.now(),
+                'top200best': top200best,
+                'top200worst': top200worst
             }
         }
     )
