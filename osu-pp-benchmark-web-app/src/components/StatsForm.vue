@@ -2,16 +2,15 @@
   <div class="form-container">
     <h2>Calculator Stats Viewer</h2>
     <p>Adjust the PP range and threshold to study the calculators' performances.</p>
-    <div class="range-slider">
-      <label>PP Range: {{ displayMinPP }} - {{ displayMaxPP }}</label>
-      <v-range-slider
-        v-model="range"
-        :max="1200"
-        :min="0"
-        :step="200"
-        strict
-      ></v-range-slider>
+    <div class="dropdown-container">
+      <label for="pp-range">Select PP Range:</label>
+      <select v-model="selectedRange" id="pp-range">
+        <option v-for="range in ppRanges" :value="range" :key="range.label">
+        {{ range.label }}
+        </option>
+      </select>
     </div>
+
 
     <div class="range-slider">
       <label>Error threshold: {{ err_threshold }}</label>
@@ -50,19 +49,25 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref } from 'vue'
 import axios from 'axios'
 import ErrorStatsGraph from './ErrorStatsGraph.vue'
 import OutliersGraph from './OutliersGraph.vue';
 
 
-const displayMinPP = computed(() => range.value[0])
-const displayMaxPP = computed(() => range.value[1] === 1200 ? '1000+' : range.value[1])
+const ppRanges = ref([
+  { value: [0, 200], label: '0-200' },
+  { value: [200, 400], label: '200-400' },
+  { value: [400, 600], label: '400-600' },
+  { value: [600, 800], label: '600-800' },
+  { value: [800, 1000], label: '800-1000' },
+  { value: [1000, 100000], label: '1000+' },
+  { value: [0, 100000], label: 'All' }
+])
+
 
 const errorUrl = 'https://osu-statistics-fetcher.onrender.com/stats/errors'
 const outliersUrl = 'https://osu-statistics-fetcher.onrender.com/stats/outliers'
-
-const range = ref([0, 400]) 
 
 // Error stats graph
 const errorStatsGraphData = ref(null)
@@ -78,15 +83,13 @@ const err_threshold = ref(200)
 const err_message = ref('')
 
 
+const selectedRange = ref(ppRanges.value[0]) // Default to the first range object
+
 async function loadGraphs() {
   err_message.value = ''
-  if (range.value[0] === range.value[1]) {
-    err_message.value = 'Invalid range: min PP cannot be equal to max PP.'
-    return
-  }
-  const minPP = range.value[0]
-  const maxPP = range.value[1] === 1200 ? 100000 : range.value[1]
-
+  
+  // Access the selected range's value
+  const [minPP, maxPP] = selectedRange.value.value
   
   // Use Promise.all to load both graphs concurrently
   await Promise.all([
@@ -94,6 +97,7 @@ async function loadGraphs() {
     loadOutliersGraph(minPP, maxPP)
   ])
 }
+
 
 
 async function loadErrorStatsGraph(min_pp, max_pp) {
@@ -157,7 +161,23 @@ async function loadOutliersGraph(min_pp, max_pp) {
 }
 
 .range-slider {
-  width: 25%;
+  width: 15%;
+}
+
+.dropdown-container {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  align-items: center;
+}
+
+#pp-range {
+  width: 150px;
+  padding: 8px;
+  font-size: 1rem;
+  border: 1px solid #ccc;
+  background-color: #2b81b7;
+  border-radius: 4px;
 }
 
 button {
