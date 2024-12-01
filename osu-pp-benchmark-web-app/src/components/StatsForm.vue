@@ -59,8 +59,8 @@ import OutliersGraph from './OutliersGraph.vue';
 const displayMinPP = computed(() => range.value[0])
 const displayMaxPP = computed(() => range.value[1] === 1200 ? '1000+' : range.value[1])
 
-const errorUrl = 'http://127.0.0.1:5000/stats/errors'
-const outliersUrl = 'http://127.0.0.1:5000/stats/outliers'
+const errorUrl = 'https://osu-statistics-fetcher.onrender.com/stats/errors'
+const outliersUrl = 'https://osu-statistics-fetcher.onrender.com/stats/outliers'
 
 const range = ref([0, 400]) 
 
@@ -153,7 +153,7 @@ async function loadOutliersGraph(min_pp, max_pp) {
   gap: 20px; 
   width: 100%;
   padding: 10px;
-  margin-bottom: 30px;
+  margin-bottom: 50px;
 }
 
 .range-slider {

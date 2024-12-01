@@ -67,7 +67,7 @@ const addRosuPP = ref(false)
 const addOtpcPP = ref(false)
 const addActualPP = ref(true)
 const loading = ref(false)
-const dataUrl = 'http://127.0.0.1:5000/graph/get-pp-data'
+const dataUrl = 'https://osu-statistics-fetcher.onrender.com/graph/get-pp-data'
 const comparisonGraphData = ref(null)
 const errorMessage = ref('')
 

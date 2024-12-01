@@ -1,7 +1,7 @@
 // fetch_beatmap_scores.js
 import { fetchScoresFromEventSource } from './event_source_fetcher';
 
-const SCORES_BEATMAP_FETCH_API = 'http://localhost:3000/fetch/beatmap/scores';
+const SCORES_BEATMAP_FETCH_API = 'https://calc-osu-plays.onrender.com/fetch/beatmap/scores';
 
 async function fetchBeatmapScores(beatmapId, limit, onProgress=null) {
     const url = `${SCORES_BEATMAP_FETCH_API}/${beatmapId}/${Math.min(limit, 50)}`;

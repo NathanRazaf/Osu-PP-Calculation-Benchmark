@@ -1,7 +1,7 @@
 // fetch_user_scores.js
 import { fetchScoresFromEventSource } from './event_source_fetcher';
 
-const SCORES_USER_FETCH_API = 'http://localhost:3000/fetch/user/scores';
+const SCORES_USER_FETCH_API = 'https://calc-osu-plays.onrender.com/fetch/user/scores';
 
 async function fetchUserScores(username, limit, onProgress=null) {
     const url = `${SCORES_USER_FETCH_API}/${username}/${Math.min(limit, 100)}`;
