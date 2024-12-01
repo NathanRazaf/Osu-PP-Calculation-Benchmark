@@ -9,6 +9,10 @@ def update_stats_on_all_ranges(newDoc):
     # Get the 200-sized bucket in which the actual PP falls
     minPP = actualPP // 200 * 200
     maxPP = minPP + 200
+    # If the actual PP is greater than 1000, set the minPP to 1000 and maxPP to 100000
+    if minPP > 1000:
+        minPP = 1000
+        maxPP = 100000
     finalRanges = [(minPP, maxPP), (0, 100000)]  # For the actual PP and the entire range
 
     thresholds = [i * 200 for i in range(1, 5)]  # From 200 to 800

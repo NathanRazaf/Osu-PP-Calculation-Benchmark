@@ -1,5 +1,4 @@
 from flask import render_template_string, jsonify
-from stats_calculations import calculate_metrics, identify_outliers
 from mongoengine import DoesNotExist
 from graph_mongo_models.comparisonGraphModels import UserGraphModel, BeatmapGraphModel
 from graph_mongo_models.statsGraphModels import ErrorStatsModel, OutlierDistributionGraphModel, OutlierModel
