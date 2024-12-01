@@ -151,8 +151,8 @@ def update_outlier_stats_bulk(newDoc, minPP, maxPP, errThreshold):
         )
     
     # Get the two lists of outliers and update them in Python for more efficient sorting
-    top200best = outlier_stat.top200best
-    top200worst = outlier_stat.top200worst
+    top200best = [outlier.to_mongo().to_dict() for outlier in outlier_stat.top200best]
+    top200worst = [outlier.to_mongo().to_dict() for outlier in outlier_stat.top200worst]
 
     top200best.extend(new_outliers)
     top200worst.extend(new_outliers)
