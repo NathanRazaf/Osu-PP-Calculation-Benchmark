@@ -1,6 +1,3 @@
-import pandas as pd
-from db import db
-import numpy as np
 from pymongo import UpdateOne
 from graph_mongo_models.statsGraphModels import ErrorStatsModel, OutlierDistributionGraphModel, OutlierModel
 from datetime import datetime   

@@ -1,5 +1,4 @@
 import pandas as pd
-import plotly.graph_objects as go
 from db import db
 from flask import jsonify
 

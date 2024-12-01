@@ -1,6 +1,5 @@
 import pandas as pd
 from db import collection
-import numpy as np
 
 def process_chunk(chunk, stats_dict):
     """

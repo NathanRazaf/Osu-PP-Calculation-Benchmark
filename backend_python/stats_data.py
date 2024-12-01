@@ -1,5 +1,3 @@
-import plotly.graph_objects as go
-import numpy as np
 from flask import render_template_string, jsonify
 from stats_calculations import calculate_metrics, identify_outliers
 from mongoengine import DoesNotExist
