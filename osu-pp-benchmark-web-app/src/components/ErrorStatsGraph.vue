@@ -49,9 +49,9 @@
     Plotly.newPlot(plotlyContainer.value, plotData, layout)
 
     // Calculate the best model based on the 3 metrics
-    const scoreOjsama = mae[0] + rmse[0] +  mbe[0]
-    const scoreRosu = mae[1] + rmse[1] + mbe[1]
-    const scoreOtpc = mae[2] + rmse[2] + mbe[2]
+    const scoreOjsama = mae[0] + rmse[0] +  Math.abs(mbe[0])
+    const scoreRosu = mae[1] + rmse[1] + Math.abs(mbe[1])
+    const scoreOtpc = mae[2] + rmse[2] + Math.abs(mbe[2])
 
     // Select the model with the lowest score
     if (scoreOjsama < scoreRosu && scoreOjsama < scoreOtpc) {
