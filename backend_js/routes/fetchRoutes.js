@@ -4,7 +4,7 @@ const { getAccessToken } = require('../authentication/token');
 const { ojsamaCalculatePP } = require('../calculators/ojsama-func');
 const { rosuCalculatePP } = require('../calculators/rosu-pp-js-func');
 const { otpcCalculatePP } = require('../calculators/osu-tools-performance-calculator-func');
-const { addPlayDataUser } = require('./fetchServices');
+const { addPlayDataUser, addPlayDataBeatmap } = require('./fetchServices');
 const UserScores = require('../mongo_models/userScoreModel');
 const BeatmapScores = require('../mongo_models/beatmapScoreModel');
 
@@ -149,6 +149,11 @@ router.get('/beatmap/scores/:beatmapId/:limit', async (req, res) => {
         });
         const limit = Math.min(req.params.limit || 10, 50);
         const scores = response.data.scores.slice(0, limit);  
+
+        const response2 = await axios.get(`https://osu.ppy.sh/api/v2/beatmaps/${beatmapId}`, {
+            headers: { "Authorization": `Bearer ${token}` }
+        });
+        const beatmapDetails = response2.data;
         
         let i = 0;
         const finalRes = [];
@@ -168,7 +173,7 @@ router.get('/beatmap/scores/:beatmapId/:limit', async (req, res) => {
             const nmiss = item.statistics.count_miss;
             
 
-            // Vérifier si le playId est déjà dans la base de données pour éviter le recalcul
+            // Check if the playId is already in the database to avoid recalculating
             let beatmap = await BeatmapScores.findOne({ beatmapId : beatmapId });
             let existingScore = null;
             if (beatmap) {
@@ -185,14 +190,14 @@ router.get('/beatmap/scores/:beatmapId/:limit', async (req, res) => {
                 otpcPP = existingScore.otpcPP;
             } else {
                 console.log(`Cache miss for playId ${playId}`);
-                // Calculer PP si les données n'existent pas dans la base de données
+                // Calculate PP if the data doesn't exist in the database
                 [ojsamaPP, rosuPP, otpcPP] = await Promise.all([
                     ojsamaCalculatePP(beatmapId, mods, accPercent, combo, nmiss),
                     rosuCalculatePP(beatmapId, mods, accPercent, combo, nmiss),
                     otpcCalculatePP(beatmapId, mods, accPercent, combo, nmiss)
                 ]);
 
-                // Ne pas ajouter les scores avec des valeurs de PP nulles ou NaN
+                // Don't add scores with null or NaN PP values
                 if (ojsamaPP === null || rosuPP === null || otpcPP === null || isNaN(ojsamaPP) || isNaN(rosuPP) || isNaN(otpcPP)) {
                     console.log(`Skipping score with playId ${playId}`);
                     i++;
@@ -200,7 +205,7 @@ router.get('/beatmap/scores/:beatmapId/:limit', async (req, res) => {
                 }
 
 
-                // Enregistrer dans la base de données pour éviter les recalculs futurs
+                // Record in the database to avoid future recalculations
                 await beatmap.addScore({
                     playId: playId,
                     username: username,
@@ -227,6 +232,8 @@ router.get('/beatmap/scores/:beatmapId/:limit', async (req, res) => {
                 const statsUpdateResponse = await axios.post(statsUpdaterRoute, obj);
                 console.log(statsUpdateResponse.data);
             }
+
+            await addPlayDataBeatmap(playId, beatmapDetails, item);
 
             const progress = ((i + 1) / limit) * 100;
             res.write(`data: ${JSON.stringify({ progress: progress.toFixed(2) })}\n\n`);

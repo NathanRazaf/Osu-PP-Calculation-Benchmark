@@ -17,7 +17,6 @@
       <option :value="false">Beatmap ID</option>
     </select>
     <button @click="fetchData">Submit</button>
-    <button @click="fetchFatData">Submit</button>
 
     <p v-if="displayMessage" :style="messageStyle">{{ displayMessage }}</p>
 
@@ -41,10 +40,6 @@ const progressText = ref('0%')
 const limit = ref()
 const displayMessage = ref('')
 const messageStyle = ref({})
-
-async function fetchFatData() {
-  await fetchScoresMultipleUsers(['[- Yami -]', 'SpiisSy', 'Skuppraa', 'squide', 'aerleag', 'Allan100', 'GoShinji', 'HiranMelody86', 'Nizayy', 'Mxgiwara', 'Minil', '-vile', 'Antiserum', 'ZwipFR', 'tweiste', 'thedt', 'Mugenn', 'Thornn', 'werkzu', 'Ted', 'aosora', '_2K', 'Ghsed'], 100)
-}
 
 async function fetchData() {
   // Reset progress before starting
