@@ -6,7 +6,6 @@ const playDataSchema = new mongoose.Schema({
     actualPP: { type: Number, required: true },
     accPercent: { type: Number, required: true },
     combo: { type: Number, required: true },
-    maxCombo: { type: Number, required: true },
     nmiss: { type: Number, required: true },
     hitJudgement: { type: Number, required: true },
     approachRate: { type: Number, required: true },

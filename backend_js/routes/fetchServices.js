@@ -1,6 +1,7 @@
 const PlayData = require('../mongo_models/playDataModel.js');
 
 async function addPlayDataUser(playId, item) {
+    console.log(item);
     const mods = item.mods;
     const maybePlay = await PlayData.findOne({ playId: playId });
     if (!maybePlay) {
@@ -9,7 +10,6 @@ async function addPlayDataUser(playId, item) {
             actualPP: item.pp,
             accPercent: item.accuracy * 100,
             combo: item.max_combo,
-            maxCombo: item.beatmap.max_combo,
             nmiss: item.statistics.count_miss,
             hitJudgement: item.beatmap.accuracy,
             approachRate: item.beatmap.ar,
@@ -43,7 +43,6 @@ async function addPlayDataBeatmap(playId, beatmapDetails, item) {
             actualPP: item.pp,
             accPercent: item.accuracy * 100,
             combo: item.max_combo,
-            maxCombo: beatmapDetails.max_combo,
             nmiss: item.statistics.count_miss,
             hitJudgement: beatmapDetails.accuracy,
             approachRate: beatmapDetails.ar,
