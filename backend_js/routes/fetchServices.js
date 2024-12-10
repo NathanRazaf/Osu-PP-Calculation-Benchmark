@@ -27,19 +27,22 @@ async function processScores({
         }
 
         const playId = item.id;
-        const mods = item.mods;
+        // Check score type and modify mods array accordingly
+        const mods = [...item.mods];  // Create a copy of the mods array
+        if (item.type === 'score_best_osu') {
+            mods.push('CL');  // Add Classic mod for classic scores
+        }
         const score = item.score;
         const accPercent = item.accuracy * 100;
         const combo = item.max_combo;
         const nmiss = item.statistics.count_miss;
         
-        // Determine which model and identifier to use based on the request type
+        // Rest of the processScores function remains the same...
         const isUserRequest = username !== null;
         const Model = isUserRequest ? UserScores : BeatmapScores;
         const identifier = isUserRequest ? username : beatmapId;
         const identifierField = isUserRequest ? 'username' : 'beatmapId';
 
-        // Find or create document
         let document = await Model.findOne({ [identifierField]: identifier });
         let existingScore = null;
         
@@ -50,7 +53,6 @@ async function processScores({
         }
 
         let ojsamaPP, rosuPP, otpcPP;
-        // We only calculate new PP values if the score doesn't exist or if force is true
         let shouldCalculate = force || !existingScore;
 
         if (!shouldCalculate) {
@@ -75,7 +77,6 @@ async function processScores({
                 continue;
             }
 
-            // Prepare score data
             const scoreData = {
                 playId,
                 score,
@@ -85,7 +86,6 @@ async function processScores({
                 actualPP: item.pp
             };
 
-            // Add type-specific fields
             if (isUserRequest) {
                 scoreData.beatmapId = item.beatmap.id;
             } else {
@@ -93,7 +93,6 @@ async function processScores({
             }
 
             if (existingScore) {
-                // Update existing score
                 await Model.updateOne(
                     { 
                         [identifierField]: identifier,
@@ -111,7 +110,6 @@ async function processScores({
                 );
                 console.log(`Updated existing score for playId ${playId}`);
             } else {
-                // Add new score
                 await document.addScore(scoreData);
                 console.log(`Added new score for playId ${playId}`);
             }
@@ -126,17 +124,12 @@ async function processScores({
                 actualPP: item.pp
             };
             finalRes.push(obj);
-
-            // Update stats
-            // const statsUpdateResponse = await axios.post(statsUpdaterRoute, obj);
-            // console.log(statsUpdateResponse.data);
         }
 
-        // Add play data based on request type
         if (isUserRequest) {
-            await addPlayDataUser(playId, item, force);
+            await addPlayDataUser(playId, item, mods, force);  // Pass modified mods array
         } else {
-            await addPlayDataBeatmap(playId, beatmapDetails, item, force);
+            await addPlayDataBeatmap(playId, beatmapDetails, item, mods, force);  // Pass modified mods array
         }
 
         const progress = ((i + 1) / limit) * 100;
@@ -148,8 +141,7 @@ async function processScores({
     return finalRes;
 }
 
-async function addPlayDataUser(playId, item, force = false) {
-    const mods = item.mods;
+async function addPlayDataUser(playId, item, mods, force = false) {
     const maybePlay = await PlayData.findOne({ playId: playId });
     const playData = {
         playId: playId,
@@ -173,7 +165,8 @@ async function addPlayDataUser(playId, item, force = false) {
         DT: mods.includes('DT'),
         NC: mods.includes('NC'),
         HR: mods.includes('HR'),
-        FL: mods.includes('FL')
+        FL: mods.includes('FL'),
+        CL: mods.includes('CL')  // Add Classic mode flag
     };
 
     if (maybePlay && force) {
@@ -186,8 +179,7 @@ async function addPlayDataUser(playId, item, force = false) {
     }
 }
 
-async function addPlayDataBeatmap(playId, beatmapDetails, item, force = false) {
-    const mods = item.mods;
+async function addPlayDataBeatmap(playId, beatmapDetails, item, mods, force = false) {
     const maybePlay = await PlayData.findOne({ playId: playId });
     const playData = {
         playId: playId,
@@ -211,7 +203,8 @@ async function addPlayDataBeatmap(playId, beatmapDetails, item, force = false) {
         DT: mods.includes('DT'),
         NC: mods.includes('NC'),
         HR: mods.includes('HR'),
-        FL: mods.includes('FL')
+        FL: mods.includes('FL'),
+        CL: mods.includes('CL')  // Add Classic mode flag
     };
 
     if (maybePlay && force) {
