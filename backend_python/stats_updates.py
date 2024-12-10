@@ -1,5 +1,5 @@
 from pymongo import UpdateOne
-from graph_mongo_models.statsGraphModels import ErrorStatsModel, OutlierDistributionGraphModel, OutlierModel
+from graph_mongo_models.statsGraphModels import ErrorStatsModel, OutlierDistributionGraphModel
 from datetime import datetime   
 from concurrent.futures import ThreadPoolExecutor
 
