@@ -1,7 +1,6 @@
 const PlayData = require('../mongo_models/playDataModel.js');
 
 async function addPlayDataUser(playId, item) {
-    console.log(item);
     const mods = item.mods;
     const maybePlay = await PlayData.findOne({ playId: playId });
     if (!maybePlay) {
