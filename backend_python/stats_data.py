@@ -21,3 +21,18 @@ def get_outlier_data(min_pp, max_pp, err_threshold):
         return jsonify(outlier_dict)
     except DoesNotExist:
         return jsonify({"message": "No data found"}), 404
+    
+
+def get_pp_distribution_data():
+    try:
+        stats = ErrorStatsModel.objets().get()
+        final_dict = {}
+        for stat in stats:
+            stat_dict = stat.to_mongo().to_dict()
+            min_pp = stat_dict['minPp']
+            max_pp = stat_dict['maxPp']
+            final_dict[(min_pp, max_pp)] = stat_dict["dataSize"]
+
+        return jsonify(final_dict)        
+    except DoesNotExist:
+        return jsonify({ "message": "No data found" }), 404

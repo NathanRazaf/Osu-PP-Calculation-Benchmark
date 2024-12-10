@@ -37,7 +37,7 @@ async function processScores({
         const combo = item.max_combo;
         const nmiss = item.statistics.count_miss;
         
-        // Rest of the processScores function remains the same...
+        // Check if the request is for a user or a beatmap
         const isUserRequest = username !== null;
         const Model = isUserRequest ? UserScores : BeatmapScores;
         const identifier = isUserRequest ? username : beatmapId;
@@ -127,9 +127,9 @@ async function processScores({
         }
 
         if (isUserRequest) {
-            await addPlayDataUser(playId, item, mods, force);  // Pass modified mods array
+            await addPlayDataUser(playId, item, mods, force);  
         } else {
-            await addPlayDataBeatmap(playId, beatmapDetails, item, mods, force);  // Pass modified mods array
+            await addPlayDataBeatmap(playId, beatmapDetails, item, mods, force);  
         }
 
         const progress = ((i + 1) / limit) * 100;
@@ -140,6 +140,7 @@ async function processScores({
 
     return finalRes;
 }
+
 
 async function addPlayDataUser(playId, item, mods, force = false) {
     const maybePlay = await PlayData.findOne({ playId: playId });
@@ -178,6 +179,7 @@ async function addPlayDataUser(playId, item, mods, force = false) {
         console.log(`Play with playId ${playId} saved to database`);
     }
 }
+
 
 async function addPlayDataBeatmap(playId, beatmapDetails, item, mods, force = false) {
     const maybePlay = await PlayData.findOne({ playId: playId });

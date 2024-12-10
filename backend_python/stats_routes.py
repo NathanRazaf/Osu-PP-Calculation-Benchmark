@@ -1,5 +1,5 @@
 from flask import Blueprint, request, jsonify
-from stats_data import get_errors_data, get_outlier_data
+from stats_data import get_errors_data, get_outlier_data, get_pp_distribution_data
 from stats_updates import update_stats_on_all_ranges
 
 
@@ -22,6 +22,9 @@ def stats_outliers():
 
     return get_outlier_data(min_pp, max_pp, err_threshold)
 
+@stats_plotter_bp.route('/stats/distribution')
+def stats_distribution():
+    return get_pp_distribution_data()
 
 @stats_plotter_bp.route('/stats/update', methods=['POST'])
 def update_all_stats():
