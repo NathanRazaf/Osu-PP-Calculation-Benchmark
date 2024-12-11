@@ -24,6 +24,7 @@ const playDataSchema = new mongoose.Schema({
     NC: { type: Boolean, required: true },
     HR: { type: Boolean, required: true },
     FL: { type: Boolean, required: true },
+    CL: { type: Boolean, required: true }
 }, { collection: "training-data"});
 
 const PlayData = mongoose.model('PlayData', playDataSchema);

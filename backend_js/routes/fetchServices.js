@@ -86,6 +86,17 @@ async function processScores({
                 actualPP: item.pp
             };
 
+            const obj = {
+                isUserRequest,
+                [identifierField]: identifier,
+                playId,
+                ojsamaPP,
+                rosuPP,
+                otpcPP,
+                actualPP: item.pp
+            };
+            finalRes.push(obj);
+
             if (isUserRequest) {
                 scoreData.beatmapId = item.beatmap.id;
             } else {
@@ -112,18 +123,15 @@ async function processScores({
             } else {
                 await document.addScore(scoreData);
                 console.log(`Added new score for playId ${playId}`);
-            }
 
-            const obj = {
-                isUserRequest,
-                [identifierField]: identifier,
-                playId,
-                ojsamaPP,
-                rosuPP,
-                otpcPP,
-                actualPP: item.pp
-            };
-            finalRes.push(obj);
+                // Update stats for new documents
+                try {
+                    const statsUpdateResponse = await axios.post(statsUpdaterRoute, obj);
+                    console.log('Stats updated successfully:', statsUpdateResponse.data);
+                } catch (error) {
+                    console.error('Error updating stats:', error.message);
+                }
+            }   
         }
 
         if (isUserRequest) {
