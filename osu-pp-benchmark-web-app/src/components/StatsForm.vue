@@ -1,6 +1,14 @@
 <template>
   <div class="form-container">
     <h2>Calculator Stats Viewer</h2>
+
+    <!-- Add PP Distribution Graph -->
+    <PPDistributionGraph
+      :distribution-data="distributionData"
+    />
+    <div v-if="distributionError !== ''" class="m-container error-message"><h2>{{ distributionError }}</h2></div>
+    <div v-if="distributionLoading" class="m-container loading-400"><h2>Loading...</h2></div>
+
     <p>Adjust the PP range and threshold to study the calculators' performances.</p>
     <div class="dropdown-container">
       <label for="pp-range">Select PP Range:</label>
@@ -49,10 +57,11 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
 import axios from 'axios'
 import ErrorStatsGraph from './ErrorStatsGraph.vue'
-import OutliersGraph from './OutliersGraph.vue';
+import OutliersGraph from './OutliersGraph.vue'
+import PPDistributionGraph from './PPDistributionGraph.vue'
 
 
 const ppRanges = ref([
@@ -65,9 +74,14 @@ const ppRanges = ref([
   { value: [0, 100000], label: 'All' }
 ])
 
-
+const distributionUrl = 'https://osu-statistics-fetcher.onrender.com/stats/distribution'
 const errorUrl = 'https://osu-statistics-fetcher.onrender.com/stats/errors'
 const outliersUrl = 'https://osu-statistics-fetcher.onrender.com/stats/outliers'
+
+// PP Distribution graph
+const distributionData = ref({})
+const distributionLoading = ref(false)
+const distributionError = ref('')
 
 // Error stats graph
 const errorStatsGraphData = ref(null)
@@ -79,6 +93,38 @@ const outliersGraphData = ref(null)
 const outliersLoading = ref(false)
 const outliersErrorMessage = ref('')
 const err_threshold = ref(200)
+
+async function loadDistributionData() {
+  try {
+    distributionLoading.value = true
+    const response = await axios.get(distributionUrl)
+    const ranges = ['0-200', '200-400', '400-600', '600-800', '800-1000', '1000+']
+    const counts = []
+    for (const range of ranges) {
+        let count = 0
+        if (range === '1000+') {
+            count = response.data['1000-100000'] || 0
+        } else {
+            count = response.data[range] || 0
+        }
+        counts.push(count)
+    }
+    distributionData.value = { ranges, counts }
+    distributionError.value = ''
+  } catch (error) {
+    console.error('Error loading distribution data:', error)
+    distributionError.value = 'Failed to load PP distribution data'
+    distributionData.value = {}
+  } finally {
+    distributionLoading.value = false
+  }
+}
+
+// Load distribution data on component mount
+onMounted(() => {
+  loadDistributionData()
+})
+
 
 const err_message = ref('')
 
@@ -215,6 +261,12 @@ button:hover {
 .loading {
   color: #3a9ad9;
   border: 2px solid #3a9ad9;
+}
+
+.loading-400 {
+  color: #3a9ad9;
+  border: 2px solid #3a9ad9;
+  height: 400px;
 }
 
 .error-message {

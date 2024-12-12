@@ -25,13 +25,14 @@ def get_outlier_data(min_pp, max_pp, err_threshold):
 
 def get_pp_distribution_data():
     try:
-        stats = ErrorStatsModel.objets().get()
+        stats = ErrorStatsModel.objects()
         final_dict = {}
         for stat in stats:
             stat_dict = stat.to_mongo().to_dict()
             min_pp = stat_dict['minPp']
             max_pp = stat_dict['maxPp']
-            final_dict[(min_pp, max_pp)] = stat_dict["dataSize"]
+            range_key = f"{int(min_pp)}-{int(max_pp)}"
+            final_dict[range_key] = stat_dict["dataSize"]
 
         return jsonify(final_dict)        
     except DoesNotExist:
