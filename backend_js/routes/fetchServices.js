@@ -25,6 +25,8 @@ async function processScores({
             i++;
             continue;
         }
+        console.log(item);
+        console.log(beatmapDetails);
 
         // Get score data
         const playId = item.id;
@@ -188,7 +190,7 @@ async function addPlayDataBeatmap(playId, beatmapDetails, item, mods) {
             actualPP: item.pp,
             accPercent: item.accuracy * 100,
             combo: item.max_combo,
-            nmiss: item.statistics.count_miss,
+            nmiss: item.statistics.miss || 0,
             hitJudgement: beatmapDetails.accuracy,
             approachRate: beatmapDetails.ar,
             circleSize: beatmapDetails.cs,
@@ -196,9 +198,9 @@ async function addPlayDataBeatmap(playId, beatmapDetails, item, mods) {
             sliderCount: beatmapDetails.count_sliders,
             spinnerCount: beatmapDetails.count_spinners,
             largeTickHits: item.statistics.large_tick_hit || 0,
-            largeTickMiss: item.statistics.large_tick_miss || 0,
+            largeTickMisses: item.statistics.large_tick_miss || 0,
             sliderTailHits: item.statistics.slider_tail_hit || 0,
-            sliderTailMiss: item.maximum_statistics.slider_tail_hit - item.statistics.slider_tail_hit || 0,
+            sliderTailMisses: item.maximum_statistics.slider_tail_hit - item.statistics.slider_tail_hit || 0,
             bpm: beatmapDetails.bpm,
             hitLength: beatmapDetails.hit_length,
             drainRate: beatmapDetails.drain,
