@@ -31,8 +31,7 @@ async function ojsamaCalculatePP(beatmapId, mods = [], accPercent = 100, combo =
         });
         
         const ppResult = parseFloat(pp.total.toFixed(3));
-        console.log(`ojsama: Executing: ${beatmapId} stars ${stars} mods ${mods} ${accPercent}% x${combo} misses ${nmiss}`);
-        console.log(`PP: ${ppResult}`);
+        console.log(`ojsama-PP: ${ppResult}`);
 
         return ppResult;
     } catch (error) {

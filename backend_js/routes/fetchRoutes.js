@@ -34,7 +34,7 @@ router.get('/user/scores/:username/:limit', async (req, res) => {
     try {
         const token = await getAccessToken();
         const username = req.params.username || 'peppy';
-        const force = req.query.force === 'true';
+        const limit = req.params.limit || 10;
         
         // Get user ID
         const userResponse = await axios.get(`https://osu.ppy.sh/api/v2/users/@${username}/osu`, {
@@ -44,16 +44,15 @@ router.get('/user/scores/:username/:limit', async (req, res) => {
         
         // Get user scores
         const scoresResponse = await axios.get(`https://osu.ppy.sh/api/v2/users/${userResponse.data.id}/scores/best`, {
-            params: { "mode": "osu", "limit": req.params.limit || 10 },
+            params: { "mode": "osu", "limit": limit },
             headers: { "Authorization": `Bearer ${token}`, "x-api-version": X_API_VERSION }
         });
 
         const finalRes = await processScores({
             scores: scoresResponse.data,
-            limit: req.params.limit,
+            limit,
             username,
-            res,
-            force
+            res
         });
 
         res.write(`data: ${JSON.stringify({ message: "Finished processing", results: finalRes })}\n\n`);
@@ -70,7 +69,6 @@ router.get('/beatmap/scores/:beatmapId/:limit', async (req, res) => {
         const token = await getAccessToken();
         const beatmapId = req.params.beatmapId;
         const limit = Math.min(req.params.limit || 10, 50);
-        const force = req.query.force === 'true';
 
         // Get beatmap scores
         const scoresResponse = await axios.get(`https://osu.ppy.sh/api/v2/beatmaps/${beatmapId}/scores`, {
@@ -88,8 +86,7 @@ router.get('/beatmap/scores/:beatmapId/:limit', async (req, res) => {
             limit,
             beatmapId,
             beatmapDetails: beatmapResponse.data,
-            res,
-            force
+            res
         });
 
         res.write(`data: ${JSON.stringify({ message: "Finished processing", results: finalRes })}\n\n`);

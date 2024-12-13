@@ -6,30 +6,28 @@ const { rosuCalculatePP } = require('../calculators/rosu-pp-js-func');
 const { otpcCalculatePP } = require('../calculators/osu-tools-performance-calculator-func');
 const PlayData = require('../mongo_models/playDataModel.js');
 
-const statsUpdaterRoute = "https://osu-statistics-fetcher.onrender.com/stats/update";
+const updateUrl = 'https://osu-statistics-fetcher.onrender.com/stats/update';
 
 async function processScores({ 
-    scores, 
-    limit, 
-    beatmapId = null, 
-    username = null, 
-    beatmapDetails = null,
-    res,
-    force = false 
+    scores, // The array of scores to process
+    limit, // The limit of scores to process
+    beatmapId = null, // The beatmapId if the request is for beatmap scores
+    username = null, // The username if the request is for user scores
+    beatmapDetails = null, // The beatmap details if the request is for beatmap scores
+    res // The response object to send progress updates 
 }) {
     let i = 0;
     const finalRes = [];
 
-    console.log(scores);
-
     for (let item of scores) {
+        // Skip scores with no pp
         if (item.pp === null) {
             i++;
             continue;
         }
 
+        // Get score data
         const playId = item.id;
-        // Check score type and modify mods array accordingly
         const mods = item.mods.map(mod => mod.acronym);
         const score = item.classic_total_score;
         const accPercent = item.accuracy * 100;
@@ -38,7 +36,8 @@ async function processScores({
         const largeTickMiss = item.statistics.large_tick_miss || 0;
         const sliderTailMiss = item.maximum_statistics.slider_tail_hit - item.statistics.slider_tail_hit || 0;
         
-        // Check if the request is for a user or a beatmap
+
+        // Choose between UserScores and BeatmapScores depending on the request
         const isUserRequest = username !== null;
         const Model = isUserRequest ? UserScores : BeatmapScores;
         const identifier = isUserRequest ? username : beatmapId;
@@ -47,6 +46,7 @@ async function processScores({
         let document = await Model.findOne({ [identifierField]: identifier });
         let existingScore = null;
         
+        // If the document exists, check if the score already exists. Else, create a new document
         if (document) {
             existingScore = document.scores.find(score => score.playId === playId);
         } else {
@@ -54,23 +54,22 @@ async function processScores({
         }
 
         let ojsamaPP, rosuPP, otpcPP;
-        let shouldCalculate = force || !existingScore;
 
-        if (!shouldCalculate) {
+        // If the score already exists, use the existing pp values. Else, calculate new pp values
+        if (existingScore) {
             console.log(`Cache hit for playId ${playId}`);
             ojsamaPP = existingScore.ojsamaPP;
             rosuPP = existingScore.rosuPP;
             otpcPP = existingScore.otpcPP;
-        }
-
-        if (shouldCalculate) {
-            console.log(`${force ? 'Force updating' : 'Calculating new'} PP values for playId ${playId}`);
+        } else {
+            console.log(`Calculating new PP values for playId ${playId}`);
             [ojsamaPP, rosuPP, otpcPP] = await Promise.all([
                 ojsamaCalculatePP(beatmapId || item.beatmap_id, mods, accPercent, combo, nmiss),
                 rosuCalculatePP(beatmapId || item.beatmap_id, mods, accPercent, combo, nmiss),
                 otpcCalculatePP(beatmapId || item.beatmap_id, mods, accPercent, combo, nmiss, sliderTailMiss, largeTickMiss)
             ]);
 
+            // Skip scores with invalid pp values
             if (ojsamaPP === null || rosuPP === null || otpcPP === null || 
                 isNaN(ojsamaPP) || isNaN(rosuPP) || isNaN(otpcPP)) {
                 console.log(`Skipping score with playId ${playId}`);
@@ -78,6 +77,7 @@ async function processScores({
                 continue;
             }
 
+            // Prepare data for saving
             const scoreData = {
                 playId,
                 score,
@@ -86,61 +86,44 @@ async function processScores({
                 otpcPP,
                 actualPP: item.pp
             };
-
-            const obj = {
-                isUserRequest,
-                [identifierField]: identifier,
-                playId,
-                ojsamaPP,
-                rosuPP,
-                otpcPP,
-                actualPP: item.pp
-            };
-            finalRes.push(obj);
-
+    
+            // Use the right identifier field 
             if (isUserRequest) {
                 scoreData.beatmapId = item.beatmap.id;
             } else {
                 scoreData.username = item.user.username;
             }
-
-            if (existingScore) {
-                await Model.updateOne(
-                    { 
-                        [identifierField]: identifier,
-                        'scores.playId': playId 
-                    },
-                    { 
-                        $set: {
-                            'scores.$.ojsamaPP': ojsamaPP,
-                            'scores.$.rosuPP': rosuPP,
-                            'scores.$.otpcPP': otpcPP,
-                            'scores.$.actualPP': item.pp,
-                            'scores.$.score': score
-                        }
-                    }
-                );
-                console.log(`Updated existing score for playId ${playId}`);
-            } else {
-                await document.addScore(scoreData);
-                console.log(`Added new score for playId ${playId}`);
-
-                // Update stats for new documents
-                try {
-                    const statsUpdateResponse = await axios.post(statsUpdaterRoute, obj);
-                    console.log('Stats updated successfully:', statsUpdateResponse.data);
-                } catch (error) {
-                    console.error('Error updating stats:', error.message);
-                }
-            }   
+            
+            // Call the addScore method of the document
+            await document.addScore(scoreData);
+            console.log(`Added new score for playId ${playId}`);
+              
         }
 
+        // Add the play data to the database for future operations
         if (isUserRequest) {
-            await addPlayDataUser(playId, item, mods, force);  
+            await addPlayDataUser(playId, item, mods);  
         } else {
-            await addPlayDataBeatmap(playId, beatmapDetails, item, mods, force);  
+            await addPlayDataBeatmap(playId, beatmapDetails, item, mods);  
         }
 
+        // Add the data to the final response
+        const obj = {
+            isUserRequest,
+            [identifierField]: identifier,
+            playId,
+            ojsamaPP,
+            rosuPP,
+            otpcPP,
+            actualPP: item.pp
+        };
+        finalRes.push(obj);
+
+        // Send the data to the update endpoint
+        await axios.post(updateUrl, obj);
+
+        
+        // Send the user a progress update
         const progress = ((i + 1) / limit) * 100;
         res.write(`data: ${JSON.stringify({ progress: progress.toFixed(2) })}\n\n`);
         console.log(`BeatmapId: ${beatmapId || item.beatmap.id}, Ojsama PP: ${ojsamaPP}, Rosu PP: ${rosuPP}, OTPC PP: ${otpcPP}, Actual PP: ${item.pp}\n\n`);
@@ -150,78 +133,86 @@ async function processScores({
     return finalRes;
 }
 
-
-async function addPlayDataUser(playId, item, mods, force = false) {
+async function addPlayDataUser(playId, item, mods) {
+    // Check if the play already exists
     const maybePlay = await PlayData.findOne({ playId: playId });
-    const playData = {
-        playId: playId,
-        actualPP: item.pp,
-        accPercent: item.accuracy * 100,
-        combo: item.max_combo,
-        nmiss: item.statistics.miss || 0,
-        hitJudgement: item.beatmap.accuracy,
-        approachRate: item.beatmap.ar,
-        circleSize: item.beatmap.cs,
-        circleCount: item.beatmap.count_circles,
-        sliderCount: item.beatmap.count_sliders,
-        spinnerCount: item.beatmap.count_spinners,
-        bpm: item.beatmap.bpm,
-        hitLength: item.beatmap.hit_length,
-        drainRate: item.beatmap.drain,
-        rating: item.beatmap.difficulty_rating,
-        EZ: mods.includes('EZ'),
-        HT: mods.includes('HT'),
-        HD: mods.includes('HD'),
-        DT: mods.includes('DT'),
-        NC: mods.includes('NC'),
-        HR: mods.includes('HR'),
-        FL: mods.includes('FL'),
-        CL: mods.includes('CL')  
-    };
 
-    if (maybePlay && force) {
-        await PlayData.updateOne({ playId: playId }, playData);
-        console.log(`Updated play data for playId ${playId}`);
-    } else if (!maybePlay) {
+    // If it doesn't,
+    if (!maybePlay) {
+        // Prepare the data for saving
+        const playData = {
+            playId: playId,
+            actualPP: item.pp,
+            accPercent: item.accuracy * 100,
+            combo: item.max_combo,
+            nmiss: item.statistics.miss || 0,
+            hitJudgement: item.beatmap.accuracy,
+            approachRate: item.beatmap.ar,
+            circleSize: item.beatmap.cs,
+            circleCount: item.beatmap.count_circles,
+            sliderCount: item.beatmap.count_sliders,
+            spinnerCount: item.beatmap.count_spinners,
+            largeTickHits: item.statistics.large_tick_hit || 0,
+            largeTickMisses: item.statistics.large_tick_miss || 0,
+            sliderTailHits: item.statistics.slider_tail_hit || 0,
+            sliderTailMisses: item.maximum_statistics.slider_tail_hit - item.statistics.slider_tail_hit || 0,
+            bpm: item.beatmap.bpm,
+            hitLength: item.beatmap.hit_length,
+            drainRate: item.beatmap.drain,
+            rating: item.beatmap.difficulty_rating,
+            EZ: mods.includes('EZ'),
+            HT: mods.includes('HT'),
+            HD: mods.includes('HD'),
+            DT: mods.includes('DT'),
+            NC: mods.includes('NC'),
+            HR: mods.includes('HR'),
+            FL: mods.includes('FL'),
+            CL: mods.includes('CL')  
+        };
+        // Save the data to the database
         const newPlay = new PlayData(playData);
         await newPlay.save();
         console.log(`Play with playId ${playId} saved to database`);
     }
 }
 
-
-async function addPlayDataBeatmap(playId, beatmapDetails, item, mods, force = false) {
+async function addPlayDataBeatmap(playId, beatmapDetails, item, mods) {
+    // Check if the play already exists
     const maybePlay = await PlayData.findOne({ playId: playId });
-    const playData = {
-        playId: playId,
-        actualPP: item.pp,
-        accPercent: item.accuracy * 100,
-        combo: item.max_combo,
-        nmiss: item.statistics.count_miss,
-        hitJudgement: beatmapDetails.accuracy,
-        approachRate: beatmapDetails.ar,
-        circleSize: beatmapDetails.cs,
-        circleCount: beatmapDetails.count_circles,
-        sliderCount: beatmapDetails.count_sliders,
-        spinnerCount: beatmapDetails.count_spinners,
-        bpm: beatmapDetails.bpm,
-        hitLength: beatmapDetails.hit_length,
-        drainRate: beatmapDetails.drain,
-        rating: beatmapDetails.difficulty_rating,
-        EZ: mods.includes('EZ'),
-        HT: mods.includes('HT'),
-        HD: mods.includes('HD'),
-        DT: mods.includes('DT'),
-        NC: mods.includes('NC'),
-        HR: mods.includes('HR'),
-        FL: mods.includes('FL'),
-        CL: mods.includes('CL')  // Add Classic mode flag
-    };
 
-    if (maybePlay && force) {
-        await PlayData.updateOne({ playId: playId }, playData);
-        console.log(`Updated play data for playId ${playId}`);
-    } else if (!maybePlay) {
+    // If it doesn't,
+    if (!maybePlay) {
+        // Prepare the data for saving
+        const playData = {
+            playId: playId,
+            actualPP: item.pp,
+            accPercent: item.accuracy * 100,
+            combo: item.max_combo,
+            nmiss: item.statistics.count_miss,
+            hitJudgement: beatmapDetails.accuracy,
+            approachRate: beatmapDetails.ar,
+            circleSize: beatmapDetails.cs,
+            circleCount: beatmapDetails.count_circles,
+            sliderCount: beatmapDetails.count_sliders,
+            spinnerCount: beatmapDetails.count_spinners,
+            largeTickHits: item.statistics.large_tick_hit || 0,
+            largeTickMiss: item.statistics.large_tick_miss || 0,
+            sliderTailHits: item.statistics.slider_tail_hit || 0,
+            sliderTailMiss: item.maximum_statistics.slider_tail_hit - item.statistics.slider_tail_hit || 0,
+            bpm: beatmapDetails.bpm,
+            hitLength: beatmapDetails.hit_length,
+            drainRate: beatmapDetails.drain,
+            rating: beatmapDetails.difficulty_rating,
+            EZ: mods.includes('EZ'),
+            HT: mods.includes('HT'),
+            HD: mods.includes('HD'),
+            DT: mods.includes('DT'),
+            NC: mods.includes('NC'),
+            HR: mods.includes('HR'),
+            FL: mods.includes('FL'),
+            CL: mods.includes('CL')  
+        };
+        // Save the data to the database
         const newPlay = new PlayData(playData);
         await newPlay.save();
         console.log(`Play with playId ${playId} saved to database`);

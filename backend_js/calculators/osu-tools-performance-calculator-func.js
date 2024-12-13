@@ -3,7 +3,7 @@ const axios = require('axios');
 async function otpcCalculatePP(beatmapId, mods = [], accPercent = 100, combo = null, nmiss = 0, sliderTailMiss = 0, largeTickMiss = 0) {
     try {
         console.log(`otpc: Executing: ${beatmapId} mods ${mods} ${accPercent}% x${combo} misses ${nmiss}`);
-        const response = await axios.post('http://146.190.155.230:8080/calculate', {
+        const response = await axios.post('http://osu-tools-calculator-api.org/calculate', {
             beatmapId,
             mods,
             accPercent,
