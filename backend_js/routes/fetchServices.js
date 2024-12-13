@@ -20,6 +20,8 @@ async function processScores({
     let i = 0;
     const finalRes = [];
 
+    console.log(scores);
+
     for (let item of scores) {
         if (item.pp === null) {
             i++;
@@ -28,14 +30,13 @@ async function processScores({
 
         const playId = item.id;
         // Check score type and modify mods array accordingly
-        const mods = [...item.mods];  // Create a copy of the mods array
-        if (item.type === 'score_best_osu') {
-            mods.push('CL');  // Add Classic mod for classic scores
-        }
-        const score = item.score;
+        const mods = item.mods.map(mod => mod.acronym);
+        const score = item.classic_total_score;
         const accPercent = item.accuracy * 100;
         const combo = item.max_combo;
-        const nmiss = item.statistics.count_miss;
+        const nmiss = item.statistics.miss || 0;
+        const largeTickMiss = item.statistics.large_tick_miss || 0;
+        const sliderTailMiss = item.maximum_statistics.slider_tail_hit - item.statistics.slider_tail_hit || 0;
         
         // Check if the request is for a user or a beatmap
         const isUserRequest = username !== null;
@@ -65,9 +66,9 @@ async function processScores({
         if (shouldCalculate) {
             console.log(`${force ? 'Force updating' : 'Calculating new'} PP values for playId ${playId}`);
             [ojsamaPP, rosuPP, otpcPP] = await Promise.all([
-                ojsamaCalculatePP(beatmapId || item.beatmap.id, mods, accPercent, combo, nmiss),
-                rosuCalculatePP(beatmapId || item.beatmap.id, mods, accPercent, combo, nmiss),
-                otpcCalculatePP(beatmapId || item.beatmap.id, mods, accPercent, combo, nmiss)
+                ojsamaCalculatePP(beatmapId || item.beatmap_id, mods, accPercent, combo, nmiss),
+                rosuCalculatePP(beatmapId || item.beatmap_id, mods, accPercent, combo, nmiss),
+                otpcCalculatePP(beatmapId || item.beatmap_id, mods, accPercent, combo, nmiss, sliderTailMiss, largeTickMiss)
             ]);
 
             if (ojsamaPP === null || rosuPP === null || otpcPP === null || 
@@ -157,7 +158,7 @@ async function addPlayDataUser(playId, item, mods, force = false) {
         actualPP: item.pp,
         accPercent: item.accuracy * 100,
         combo: item.max_combo,
-        nmiss: item.statistics.count_miss,
+        nmiss: item.statistics.miss || 0,
         hitJudgement: item.beatmap.accuracy,
         approachRate: item.beatmap.ar,
         circleSize: item.beatmap.cs,
@@ -175,7 +176,7 @@ async function addPlayDataUser(playId, item, mods, force = false) {
         NC: mods.includes('NC'),
         HR: mods.includes('HR'),
         FL: mods.includes('FL'),
-        CL: mods.includes('CL')  // Add Classic mode flag
+        CL: mods.includes('CL')  
     };
 
     if (maybePlay && force) {

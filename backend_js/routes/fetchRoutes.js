@@ -6,6 +6,8 @@ const { processScores } = require('./fetchServices');
 
 const router = express.Router();
 
+const X_API_VERSION = 20220705;
+
 // Helper function to set SSE headers
 function setSSEHeaders(res) {
     res.setHeader('Content-Type', 'text/event-stream');
@@ -43,7 +45,7 @@ router.get('/user/scores/:username/:limit', async (req, res) => {
         // Get user scores
         const scoresResponse = await axios.get(`https://osu.ppy.sh/api/v2/users/${userResponse.data.id}/scores/best`, {
             params: { "mode": "osu", "limit": req.params.limit || 10 },
-            headers: { "Authorization": `Bearer ${token}` }
+            headers: { "Authorization": `Bearer ${token}`, "x-api-version": X_API_VERSION }
         });
 
         const finalRes = await processScores({
@@ -73,7 +75,7 @@ router.get('/beatmap/scores/:beatmapId/:limit', async (req, res) => {
         // Get beatmap scores
         const scoresResponse = await axios.get(`https://osu.ppy.sh/api/v2/beatmaps/${beatmapId}/scores`, {
             params: { "mode": "osu" },
-            headers: { "Authorization": `Bearer ${token}` }
+            headers: { "Authorization": `Bearer ${token}`, "x-api-version": X_API_VERSION }
         });
 
         // Get beatmap details
