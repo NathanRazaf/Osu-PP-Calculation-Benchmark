@@ -6,7 +6,7 @@
       <h3>Statistics of oj-sama:</h3>
       <ul>
         <li>Mean Absolute Error: {{ ojsamaMAE.toFixed(2) }}</li>
-        <li>Mean Squared Error: {{ ojsamaMSE.toFixed(2) }}</li>
+        <li>Mean Bias Error: {{ ojsamaMBE.toFixed(2) }}</li>
         <li>Root Mean Squared Error: {{ ojsamaRMSE.toFixed(2) }}</li>
       </ul>
     </div>
@@ -14,7 +14,7 @@
       <h3>Statistics of Rosu:</h3>
       <ul>
         <li>Mean Absolute Error: {{ rosuMAE.toFixed(2) }}</li>
-        <li>Mean Squared Error: {{ rosuMSE.toFixed(2) }}</li>
+        <li>Mean Bias Error: {{ rosuMBE.toFixed(2) }}</li>
         <li>Root Mean Squared Error: {{ rosuRMSE.toFixed(2) }}</li>
       </ul>
     </div>
@@ -22,7 +22,7 @@
       <h3>Statistics of OTPC:</h3>
       <ul>
         <li>Mean Absolute Error: {{ otpcMAE.toFixed(2) }}</li>
-        <li>Mean Squared Error: {{ otpcMSE.toFixed(2) }}</li>
+        <li>Mean Bias Error: {{ otpcMBE.toFixed(2) }}</li>
         <li>Root Mean Squared Error: {{ otpcRMSE.toFixed(2) }}</li>
       </ul>
     </div>
@@ -65,9 +65,9 @@ const plotlyContainer = ref(null)
 const ojsamaMAE = ref(0)
 const rosuMAE = ref(0)
 const otpcMAE = ref(0)
-const ojsamaMSE = ref(0)
-const rosuMSE = ref(0)
-const otpcMSE = ref(0)
+const ojsamaMBE = ref(0)
+const rosuMBE = ref(0)
+const otpcMBE = ref(0)
 const ojsamaRMSE = ref(0)
 const rosuRMSE = ref(0)
 const otpcRMSE = ref(0)
@@ -92,23 +92,32 @@ const {
   addActualPP,
 } = graphData.value
 
-// Calculate the MAE, MSE and RMSE of each model compared to the actual PP
-if (ojsamaPP && actualPP && addOjsamaPP) {
-  ojsamaMAE.value = ojsamaPP.reduce((acc, val, i) => acc + Math.abs(val - actualPP[i]), 0) / ojsamaPP.length
-  ojsamaMSE.value = ojsamaPP.reduce((acc, val, i) => acc + Math.pow(val - actualPP[i], 2), 0) / ojsamaPP.length
-  ojsamaRMSE.value = Math.sqrt(ojsamaMSE.value)
+// Calculate the MAE, MBE and RMSE of each model compared to the actual PP
+if (addOjsamaPP && ojsamaPP && actualPP) {
+  const ojsamaErrors = actualPP.map((actual, index) => Math.abs(actual - ojsamaPP[index]))
+  const ojsamaBiasErrors = actualPP.map((actual, index) => actual - ojsamaPP[index])
+  
+  ojsamaMAE.value = ojsamaErrors.reduce((acc, val) => acc + val, 0) / ojsamaErrors.length
+  ojsamaMBE.value = ojsamaBiasErrors.reduce((acc, val) => acc + val, 0) / ojsamaErrors.length
+  ojsamaRMSE.value = Math.sqrt(ojsamaErrors.map((val) => val ** 2).reduce((acc, val) => acc + val, 0) / ojsamaErrors.length)
 }
 
-if (rosuPP && actualPP && addRosuPP) {
-  rosuMAE.value = rosuPP.reduce((acc, val, i) => acc + Math.abs(val - actualPP[i]), 0) / rosuPP.length
-  rosuMSE.value = rosuPP.reduce((acc, val, i) => acc + Math.pow(val - actualPP[i], 2), 0) / rosuPP.length
-  rosuRMSE.value = Math.sqrt(rosuMSE.value)
+if (addRosuPP && rosuPP && actualPP) {
+  const rosuErrors = actualPP.map((actual, index) => Math.abs(actual - rosuPP[index]))
+  const rosuBiasErrors = actualPP.map((actual, index) => actual - rosuPP[index])
+
+  rosuMAE.value = rosuErrors.reduce((acc, val) => acc + val, 0) / rosuErrors.length
+  rosuMBE.value = rosuBiasErrors.reduce((acc, val) => acc + val, 0) / rosuErrors.length
+  rosuRMSE.value = Math.sqrt(rosuErrors.map((val) => val ** 2).reduce((acc, val) => acc + val, 0) / rosuErrors.length)
 }
 
-if (otpcPP && actualPP && addOtpcPP) {
-  otpcMAE.value = otpcPP.reduce((acc, val, i) => acc + Math.abs(val - actualPP[i]), 0) / otpcPP.length
-  otpcMSE.value = otpcPP.reduce((acc, val, i) => acc + Math.pow(val - actualPP[i], 2), 0) / otpcPP.length
-  otpcRMSE.value = Math.sqrt(otpcMSE.value)
+if (addOtpcPP && otpcPP && actualPP) {
+  const otpcErrors = actualPP.map((actual, index) => Math.abs(actual - otpcPP[index]))
+  const otpcBiasErrors = actualPP.map((actual, index) => actual - otpcPP[index])
+
+  otpcMAE.value = otpcErrors.reduce((acc, val) => acc + val, 0) / otpcErrors.length
+  otpcMBE.value = otpcBiasErrors.reduce((acc, val) => acc + val, 0) / otpcErrors.length
+  otpcRMSE.value = Math.sqrt(otpcErrors.map((val) => val ** 2).reduce((acc, val) => acc + val, 0) / otpcErrors.length)
 }
 
 const plotData = []
