@@ -25,8 +25,6 @@ async function processScores({
             i++;
             continue;
         }
-        console.log(item);
-        console.log(beatmapDetails);
 
         // Get score data
         const playId = item.id;

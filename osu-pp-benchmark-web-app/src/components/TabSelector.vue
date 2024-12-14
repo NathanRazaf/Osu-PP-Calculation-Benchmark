@@ -1,43 +1,47 @@
 <script setup>
-import { ref } from 'vue'
-import FetchDataForm from './FetchDataForm.vue';
+import { ref, computed } from 'vue'
 import GenerateGraphForm from './GenerateGraphForm.vue';
 import StatsForm from './StatsForm.vue';
-const activeTab = ref('fetchData') // Default tab is 'FetchData'
+const activeTab = ref('generateGraph') // Default tab is 'generateGraph'
 
 function switchTab(tab) {
   activeTab.value = tab
 }
+
+// Compute the current component based on activeTab
+const currentComponent = computed(() => {
+  switch (activeTab.value) {
+    case 'generateGraph':
+      return GenerateGraphForm
+    case 'statsForm':
+      return StatsForm
+    default:
+      return FetchDataForm
+  }
+})
 </script>
 
 <template>
   <div class="tab-selector">
     <button 
-      :class="{ active: activeTab === 'fetchData' }" 
       class="one"
-      @click="switchTab('fetchData')"
-    >
-      Fetch Data
-    </button>
-    <button 
-        class="two"
       :class="{ active: activeTab === 'generateGraph' }" 
       @click="switchTab('generateGraph')"
     >
       Generate Graph
     </button>
     <button 
-        class="three"
+      class="two"
       :class="{ active: activeTab === 'statsForm' }" 
       @click="switchTab('statsForm')"
     >
-      Stats
+      PP Stats
     </button>
   </div>
   <div class="tab-content">
-    <FetchDataForm v-if="activeTab === 'fetchData'" />
-    <GenerateGraphForm v-if="activeTab === 'generateGraph'" />
-    <StatsForm v-if="activeTab === 'statsForm'" />
+    <keep-alive>
+      <component :is="currentComponent" />
+    </keep-alive>
   </div>
 </template>
 
@@ -58,7 +62,7 @@ button {
   cursor: pointer;
   font-size: 1rem;
   font-weight: bold;
-  width: 10%;
+  width: 50%;
   transition: background-color 0.3s;
   border-top: none;
   border-bottom: none;
@@ -84,7 +88,7 @@ button:hover {
 
 
 button:focus {
-  text-decoration: underline;
+  background-color: #2b81b7;
 }
 
 .tab-content {
