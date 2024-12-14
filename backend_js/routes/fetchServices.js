@@ -97,6 +97,9 @@ async function processScores({
             // Call the addScore method of the document
             await document.addScore(scoreData);
             console.log(`Added new score for playId ${playId}`);
+
+            // Send the new score data to the update endpoint
+            await axios.post(updateUrl, scoreData);
               
         }
 
@@ -118,10 +121,7 @@ async function processScores({
             actualPP: item.pp
         };
         finalRes.push(obj);
-
-        // Send the data to the update endpoint
-        await axios.post(updateUrl, obj);
-
+        
         
         // Send the user a progress update
         const progress = ((i + 1) / limit) * 100;
