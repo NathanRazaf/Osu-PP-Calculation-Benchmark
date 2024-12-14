@@ -1,10 +1,13 @@
 from flask import Blueprint, request, jsonify
-from stats_data import get_errors_data, get_outlier_data, get_pp_distribution_data
+from stats_data import get_errors_data, get_outlier_data, get_pp_distribution_data, get_all_stats_from_db
 from stats_updates import update_stats_on_all_ranges
 
 
 stats_plotter_bp = Blueprint('stats', __name__)
 
+@stats_plotter_bp.route('/stats/all')
+def get_all_stats():
+    return get_all_stats_from_db()
 
 @stats_plotter_bp.route('/stats/errors')
 def stats_error_chart():
