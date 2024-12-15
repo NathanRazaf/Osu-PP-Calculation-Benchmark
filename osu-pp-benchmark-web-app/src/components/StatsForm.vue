@@ -1,9 +1,9 @@
 <template>
   <div class="form-container">
-    <h2>Calculator Stats Viewer</h2>
+    <h2 style="margin-bottom: 40px;">Calculator Stats Viewer</h2>
 
     <!-- Add PP Distribution Graph -->
-    <PPDistributionGraph
+    <PPDistributionGraph v-if="distributionData && distributionError === '' && !distributionLoading"
       :distribution-data="distributionData"
     />
     <div v-if="distributionError !== ''" class="m-container error-message"><h2>{{ distributionError }}</h2></div>
@@ -31,13 +31,10 @@
       ></v-slider>
     </div>
 
-    <button @click="loadGraphs">Submit</button>
-    <h3 v-if="err_message !== ''">{{ err_message }}</h3>
-
 
     <div class="graph-container-grid">
       <ErrorStatsGraph
-      v-if="errorStatsGraphData"
+      v-if="errorStatsGraphData && statsErrorMessage === '' && !errorStatsLoading"
       :error-stats-graph-data="errorStatsGraphData"
       title="Error Statistics"
     />
@@ -45,7 +42,7 @@
     <div v-if="errorStatsLoading" class="m-container loading"><h2>Loading...</h2></div>
 
     <OutliersGraph
-      v-if="outliersGraphData"
+      v-if="outliersGraphData && outliersErrorMessage === '' && !outliersLoading"
       :outliers-graph-data="outliersGraphData"
       title="Outliers"
     />
@@ -57,7 +54,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, watch, onUnmounted } from 'vue'
 import axios from 'axios'
 import ErrorStatsGraph from './ErrorStatsGraph.vue'
 import OutliersGraph from './OutliersGraph.vue'
@@ -74,9 +71,9 @@ const ppRanges = ref([
   { value: [0, 100000], label: 'All' }
 ])
 
-const distributionUrl = 'https://osu-statistics-fetcher.onrender.com/stats/distribution'
-const errorUrl = 'https://osu-statistics-fetcher.onrender.com/stats/errors'
-const outliersUrl = 'https://osu-statistics-fetcher.onrender.com/stats/outliers'
+
+const allStatsUrl = 'https://osu-statistics-fetcher.onrender.com/stats/all'
+const statsCache = ref({})
 
 // PP Distribution graph
 const distributionData = ref({})
@@ -92,101 +89,103 @@ const statsErrorMessage = ref('')
 const outliersGraphData = ref(null)
 const outliersLoading = ref(false)
 const outliersErrorMessage = ref('')
-const err_threshold = ref(200)
 
-async function loadDistributionData() {
+
+const selectedRange = ref(ppRanges.value[6])  // Default to 'All'
+const err_threshold = ref(200) // Default to 200
+
+async function loadAllStats() {
   try {
-    distributionLoading.value = true
-    const response = await axios.get(distributionUrl)
-    const ranges = ['0-200', '200-400', '400-600', '600-800', '800-1000', '1000+']
-    const counts = []
-    for (const range of ranges) {
-        let count = 0
-        if (range === '1000+') {
-            count = response.data['1000-100000'] || 0
-        } else {
-            count = response.data[range] || 0
-        }
-        counts.push(count)
-    }
-    distributionData.value = { ranges, counts }
-    distributionError.value = ''
-  } catch (error) {
-    console.error('Error loading distribution data:', error)
-    distributionError.value = 'Failed to load PP distribution data'
-    distributionData.value = {}
+    const response = await axios.get(allStatsUrl)
+    statsCache.value = response.data
+    loadDistributionData()
+    loadErrorStatsGraph(selectedRange.value.value[0], selectedRange.value.value[1]),
+    loadOutliersGraph(selectedRange.value.value[0], selectedRange.value.value[1])
+  } catch (err) {
+    console.error('Error loading stats:', err)
   } finally {
-    distributionLoading.value = false
   }
 }
 
-// Load distribution data on component mount
-onMounted(() => {
-  loadDistributionData()
-})
 
-
-const err_message = ref('')
-
-
-const selectedRange = ref(ppRanges.value[0]) // Default to the first range object
-
-async function loadGraphs() {
-  err_message.value = ''
-  
-  // Access the selected range's value
-  const [minPP, maxPP] = selectedRange.value.value
-  
-  // Use Promise.all to load both graphs concurrently
-  await Promise.all([
-    loadErrorStatsGraph(minPP, maxPP),
-    loadOutliersGraph(minPP, maxPP)
-  ])
-}
 
 
 
 async function loadErrorStatsGraph(min_pp, max_pp) {
-  try {
-    errorStatsLoading.value = true
+  errorStatsLoading.value = true
+  const data = statsCache.value?.errorStats?.[min_pp + '-' + max_pp]
+  
+  if (data === null || data === undefined) {
     errorStatsGraphData.value = null
-    const response = await axios.get(errorUrl, { params: { min_pp, max_pp } })
-    errorStatsGraphData.value = response.data
+    statsErrorMessage.value = 'No data found in that range.'
+  } else {
+    errorStatsGraphData.value = data
     statsErrorMessage.value = ''
-  } catch (error) {
-    if (error.status === 404) {
-      console.log('No data found in that range.')
-      errorStatsGraphData.value = null
-      statsErrorMessage.value = 'No data found in that range.'
-    } else {
-      console.log('An error occurred:', error.message)
-      statsErrorMessage.value = error.message
-    }
-  } finally {
-    errorStatsLoading.value = false
   }
+  errorStatsLoading.value = false
 }
 
 async function loadOutliersGraph(min_pp, max_pp) {
-  try {
-    outliersLoading.value = true
+  outliersLoading.value = true
+  const data = statsCache.value?.outliers?.[min_pp + '-' + max_pp]?.[err_threshold.value]
+  
+  if (data === null || data === undefined) {
     outliersGraphData.value = null
-    const response = await axios.get(outliersUrl, { params: { min_pp, max_pp, err_threshold:err_threshold.value } })
-    outliersGraphData.value = response.data
+    outliersErrorMessage.value = 'No outliers found in that range.'
+  } else {
+    outliersGraphData.value = data
     outliersErrorMessage.value = ''
-  } catch (error) {
-    if (error.status === 404) {
-      console.log('No outliers found in that range.')
-      outliersGraphData.value = null
-      outliersErrorMessage.value = 'No outliers found in that range.'
-    } else {
-      console.log('An error occurred:', error.message)
-      outliersErrorMessage.value = error.message
-    }
-  } finally {
-    outliersLoading.value = false
   }
+  outliersLoading.value = false
 }
+
+async function loadDistributionData() {
+  distributionLoading.value = true
+  const distribution = statsCache.value?.distribution
+  
+  if (!distribution) {
+    distributionError.value = 'Failed to load PP distribution data'
+    distributionData.value = {}
+  } else {
+    const ranges = ['0-200', '200-400', '400-600', '600-800', '800-1000', '1000-100000']
+    const counts = ranges.map(range => distribution[range] ?? 0)
+    ranges[ranges.length - 1] = '1000+'
+    
+    distributionData.value = { ranges, counts }
+    distributionError.value = ''
+  }
+  distributionLoading.value = false
+}
+
+// Load distribution data on component mount
+onMounted(() => {
+  loadAllStats()
+})
+
+// Watch for changes in selection
+watch([selectedRange, err_threshold], async () => {
+  await Promise.all([
+    loadErrorStatsGraph(selectedRange.value.value[0], selectedRange.value.value[1]),
+    loadOutliersGraph(selectedRange.value.value[0], selectedRange.value.value[1])
+  ])
+})
+
+// Initial load and set up periodic refresh
+let refreshInterval
+onMounted(() => {
+  loadAllStats()
+  
+  // Refresh every 10 seconds
+  refreshInterval = setInterval(() => {
+    loadAllStats()
+  }, 10000)
+})
+
+onUnmounted(() => {
+  if (refreshInterval) {
+    clearInterval(refreshInterval)
+  }
+})
 </script>
 
 <style scoped>

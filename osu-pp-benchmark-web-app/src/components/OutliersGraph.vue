@@ -56,7 +56,7 @@ function renderGraph() {
       y: ojsamaData.map(outlier => outlier.error),
       mode: 'markers',
       type: 'scatter',
-      name: `ojsamaPP (count: ${ojsamaData.length})`,
+      name: `ojsama (count: ${ojsamaData.length})`,
       marker: { color: 'red' },
       showlegend: true
     },
@@ -65,7 +65,7 @@ function renderGraph() {
       y: otpcData.map(outlier => outlier.error),
       mode: 'markers',
       type: 'scatter',
-      name: `otpcPP (count: ${otpcData.length})`,
+      name: `osu-tools' PC (count: ${otpcData.length})`,
       marker: { color: 'blue' },
       showlegend: true
     },
@@ -74,7 +74,7 @@ function renderGraph() {
       y: rosuData.map(outlier => outlier.error),
       mode: 'markers',
       type: 'scatter',
-      name: `rosuPP (count: ${rosuData.length})`,
+      name: `rosu-pp-js (count: ${rosuData.length})`,
       marker: { color: 'green' },
       showlegend: true
     }

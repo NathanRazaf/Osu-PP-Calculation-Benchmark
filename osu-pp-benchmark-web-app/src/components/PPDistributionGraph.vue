@@ -1,8 +1,8 @@
 <!-- PPDistributionGraph.vue -->
 <template>
     <div style="display:flex; flex-direction: column; align-items: center; justify-content: center; width: 100%;">
-      <h3>PP Distribution Across Ranges</h3>
-      <div ref="plotlyContainer" style="width: 50%; height: 400px;"></div>
+      <h3 style="margin-bottom: 10px;">PP Distribution Across Ranges</h3>
+      <div ref="plotlyContainer" style="width: 50%; height: 400px; margin-bottom: 30px;"></div>
     </div>
   </template>
   
@@ -23,8 +23,6 @@
     if (!plotlyContainer.value || !props.distributionData) {
       return
     }
-
-    console.log(props.distributionData) // Debugging
   
     const { ranges, counts } = props.distributionData
 

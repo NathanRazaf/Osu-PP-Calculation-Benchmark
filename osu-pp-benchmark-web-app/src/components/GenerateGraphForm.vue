@@ -20,15 +20,15 @@
     <div class="checkbox-container">
       <label>
         <input type="checkbox" v-model="addOjsamaPP" />
-        <span>Add Ojsama PP</span>
+        <span>Add ojsama's PP calculations</span>
       </label>
       <label>
         <input type="checkbox" v-model="addRosuPP" />
-        <span>Add Rosu PP</span>
+        <span>Add rosu-pp-js' PP calculations</span>
       </label>
       <label>
         <input type="checkbox" v-model="addOtpcPP" />
-        <span>Add Otpc PP</span>
+        <span>Add osu-tools' PP calculations</span>
       </label>
       <label>
         <input type="checkbox" v-model="addActualPP" />
@@ -39,13 +39,11 @@
     <!-- Submit button -->
     <button 
       @click="onButtonPress" 
-      :disabled="loading"
+      :disabled="loadingData"
     >
       {{ loadingData ? `Loading... ${ progressValue }%` : 'Submit' }}
     </button>
 
-    <!-- Loading Container -->
-    <div v-if="loading" class="m-container loading">Loading... </div>
 
     <!-- Error Display -->
     <div v-if="errorMessage !== ''" class="m-container error-message"><h2>{{ errorMessage }}</h2></div>
@@ -73,7 +71,6 @@ const addOjsamaPP = ref(false)
 const addRosuPP = ref(false)
 const addOtpcPP = ref(false)
 const addActualPP = ref(true)
-const loading = ref(false)
 const loadingData = ref(false)
 const dataUrl = 'https://osu-statistics-fetcher.onrender.com/graph/get-pp-data'
 const comparisonGraphData = ref(null)
@@ -84,6 +81,7 @@ async function onButtonPress() {
     // Reset progress before starting
     progressValue.value = 0
     loadingData.value = true
+    errorMessage.value = ''
 
     const params = {
       identifier: identifier.value,
@@ -101,12 +99,12 @@ async function onButtonPress() {
       if (actualPParray.length < 100) {
         await callFetcher()
       }
-      loadGraph()
+      await loadGraph()
     } catch (error) {
       if (error.response && error.response.status === 404) {
         // If 404, call fetcher to get new data
         await callFetcher()
-        loadGraph()
+        await loadGraph()
       } else {
         // Re-throw other errors to be caught by outer try-catch
         throw error
@@ -114,6 +112,10 @@ async function onButtonPress() {
     }
   } catch (error) {
     console.error('Error calling fetcher:', error)
+    errorMessage.value = 'An error occurred while processing your request'
+  } finally {
+    // Only set loadingData to false here, after everything is complete
+    loadingData.value = false
   }
 }
 
@@ -131,7 +133,6 @@ async function callFetcher() {
       await fetchBeatmapScores(parseInt(identifier.value), 100, onProgress)
     }
 
-    loadingData.value = false
   
   } catch (error) {
     console.error('Error calling fetcher:', error)
@@ -150,22 +151,15 @@ async function loadGraph() {
     }
     
     const response = await axios.get(dataUrl, { params })
-    loading.value = true
     comparisonGraphData.value = response.data
-    loading.value = false
-    loadingData.value = false
     errorMessage.value = ''
   } catch (error) {
     if (error.status === 404) {
       console.log('Data not found.')
       comparisonGraphData.value = null
-      loading.value = false
-      loadingData.value = false
       errorMessage.value = 'User/Beatmap not found.'
     } else {
       console.log('An error occurred:', error.message)
-      loading.value = false
-      loadingData.value = false
       errorMessage.value = error.message
     }
   }
@@ -207,14 +201,17 @@ select {
   justify-content: center;
   gap: 20px;
   margin-top: 10px;
+  flex-wrap: wrap; 
+  max-width: 800px; 
 }
-
 label {
   display: flex;
   flex-direction: column;
   align-items: center;
   font-size: 1rem;
   color: #fff;
+  width: 150px; 
+  text-align: center;
 }
 
 input[type="checkbox"] {
@@ -252,11 +249,6 @@ button:hover {
   padding: 10px;
   width: 70%;
   height: 700px;
-}
-
-.loading {
-  color: #3a9ad9;
-  border: 2px solid #3a9ad9;
 }
 
 .error-message {
