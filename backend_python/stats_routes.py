@@ -1,6 +1,5 @@
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request
 from stats_data import get_errors_data, get_outlier_data, get_pp_distribution_data, get_all_stats_from_db
-from stats_updates import update_stats_on_all_ranges
 
 
 stats_plotter_bp = Blueprint('stats', __name__)
@@ -29,17 +28,7 @@ def stats_outliers():
 def stats_distribution():
     return get_pp_distribution_data()
 
-@stats_plotter_bp.route('/stats/update', methods=['POST'])
-def update_all_stats():
-    # Get the document from the request's body
-    doc = request.get_json()  
-    if doc is None:
-        return jsonify({ "message": "No document provided" }), 400
 
-    # Update the stats with the document
-    update_stats_on_all_ranges(doc)  
-
-    return jsonify({ "message": "Stats updated" })
 
 
     

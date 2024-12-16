@@ -2,7 +2,7 @@ import pandas as pd
 from db import db
 from flask import jsonify
 
-def get_pp_data(identifier, is_username, addOjsamaPP=False, addRosuPP=False, addOtpcPP=False, addActualPP=True):
+def get_pp_data(identifier, is_username):
     query = {'username': identifier} if is_username else {'beatmapId': int(identifier)}
     cursor = db['userscores' if is_username else 'beatmapscores'].find_one(query)
     if cursor is None:
@@ -28,11 +28,7 @@ def get_pp_data(identifier, is_username, addOjsamaPP=False, addRosuPP=False, add
         "otpcPP": list(data['otpcPP']),
         "actualPP": list(data['actualPP']),
         "pp_min": pp_min,
-        "pp_cap": pp_cap,
-        "addOjsamaPP": addOjsamaPP,
-        "addRosuPP": addRosuPP,
-        "addOtpcPP": addOtpcPP,
-        "addActualPP": addActualPP,
+        "pp_cap": pp_cap
     }
     
     return jsonify(final_data)

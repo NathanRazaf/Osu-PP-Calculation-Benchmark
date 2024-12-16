@@ -5,8 +5,8 @@ const { ojsamaCalculatePP } = require('../calculators/ojsama-func');
 const { rosuCalculatePP } = require('../calculators/rosu-pp-js-func');
 const { otpcCalculatePP } = require('../calculators/osu-tools-performance-calculator-func');
 const PlayData = require('../mongo_models/playDataModel.js');
+const { updateStatsOnAllRanges } = require('./updaters');
 
-const updateUrl = 'https://osu-statistics-fetcher.onrender.com/stats/update';
 
 async function processScores({ 
     scores, // The array of scores to process
@@ -99,7 +99,7 @@ async function processScores({
             console.log(`Added new score for playId ${playId}`);
 
             // Send the new score data to the update endpoint
-            await axios.post(updateUrl, scoreData);
+            await updateStatsOnAllRanges(scoreData);
               
         }
 

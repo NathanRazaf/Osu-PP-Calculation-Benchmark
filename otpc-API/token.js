@@ -21,7 +21,6 @@ async function getAccessToken() {
             scope: 'public'
         });
         
-        console.log(response.data);
         cachedToken = response.data.access_token;
         tokenExpiration = currentTime + 86400 * 1000; // Set expiration to 24 hours (in milliseconds)
 

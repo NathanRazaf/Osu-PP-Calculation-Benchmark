@@ -1,8 +1,6 @@
-from flask import render_template_string, jsonify
+from flask import jsonify
 from mongoengine import DoesNotExist
-from graph_mongo_models.comparisonGraphModels import UserGraphModel, BeatmapGraphModel
-from graph_mongo_models.statsGraphModels import ErrorStatsModel, OutlierDistributionGraphModel, OutlierModel
-from datetime import datetime
+from graph_mongo_models.statsGraphModels import ErrorStatsModel, OutlierDistributionGraphModel
 
 
 def get_all_stats_from_db():

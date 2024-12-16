@@ -1,11 +1,10 @@
 const fastify = require('fastify')({ logger: true });
 const dotenv = require('dotenv');
-dotenv.config();
-const { execFile } = require('child_process');
-const path = require('path');
-const fs = require('fs');
 const axios = require('axios');
 const { getAccessToken } = require('./token');
+const { calculatePerformance } = require('./services/mainCalculator');
+
+dotenv.config();
 
 async function getScoreDetails(scoreId) {
     try {
@@ -31,16 +30,6 @@ async function getScoreDetails(scoreId) {
     }
 }
 
-async function deleteCacheFile(beatmapId) {
-    const cacheFilePath = path.join(__dirname, './cache', `${beatmapId}.osu`);
-    console.log(`Deleting cache file: ${cacheFilePath}`);
-    if (fs.existsSync(cacheFilePath)) {
-        fs.unlinkSync(cacheFilePath, (err) => {
-            if (err) console.error(`Failed to delete cache file: ${err.message}`);
-        });
-    }
-}
-
 // API endpoint for PP calculation
 fastify.post('/calculate', async (request, reply) => {
     try {
@@ -60,6 +49,8 @@ fastify.post('/calculate', async (request, reply) => {
                 beatmapId: request.body.beatmapId,
                 mods: request.body.mods,
                 accPercent: request.body.accPercent,
+                n50: request.body.n50,
+                n100: request.body.n100,
                 combo: request.body.combo,
                 nmiss: request.body.nmiss,
                 sliderTailMiss: request.body.sliderTailMiss || 0,
@@ -67,52 +58,71 @@ fastify.post('/calculate', async (request, reply) => {
             };
         }
 
-        // Destructure the parameters for use in calculation
-        const { beatmapId, mods, accPercent, combo, nmiss, sliderTailMiss, largeTickMiss } = scoreParams;
-
-        const executablePath = path.join(__dirname, 'PerformanceCalculatorLinux', 'PerformanceCalculator');
-        const modsExecArray = mods.flatMap((mod) => ['-m', mod.toUpperCase()]);
-        const execArray = [
-            'simulate', 'osu', beatmapId.toString(),
-            '-a', accPercent.toString(),
-            '-c', combo.toString(),
-            '-X', nmiss.toString(),
-            '-S', sliderTailMiss.toString(),
-            '-L', largeTickMiss.toString(),
-            ...modsExecArray,
-            '-j',
-        ];
-
-        return new Promise((resolve, reject) => {
-            execFile(executablePath, execArray, (error, stdout) => {
-                if (error) {
-                    reply.status(500).send({ error: error.message });
-                    return;
-                }
-
-                try {
-                    const lines = stdout.split('\n');
-                    if (lines[0].includes('Downloading')) {
-                        lines.shift();
-                    }
-                    stdout = lines.join('\n');
-                    const jsonOutput = JSON.parse(stdout);
-
-                    // Delete the cache file after parsing the output
-                    deleteCacheFile(beatmapId);
-
-                    if (jsonOutput?.performance_attributes?.pp) {
-                        resolve({ pp: parseFloat(jsonOutput.performance_attributes.pp.toFixed(3)) });
-                    } else {
-                        reject(new Error("PP value not found in JSON output."));
-                    }
-                } catch (err) {
-                    reply.status(500).send({ error: `Failed to parse JSON: ${err.message}` });
-                }
-            });
-        });
+        try {
+            const result = await calculatePerformance(scoreParams, __dirname);
+            reply.send(result);
+        } catch (error) {
+            reply.status(500).send({ error: error.message });
+        }
     } catch (error) {
         reply.status(500).send({ error: `Unexpected error: ${error.message}` });
+    }
+});
+
+// Get approximate rank for PP value
+fastify.get('/rank-from-pp', async (request, reply) => {
+    const pp = request.query.pp;
+    const mode = request.query.mode || '0';
+
+    if (!pp) {
+        reply.status(400).send({ error: 'PP value is required' });
+        return;
+    }
+
+    try {
+        const response = await axios.get('https://osudaily.net/data/getPPRank.php', {
+            params: {
+                't': 'pp',
+                'v': pp.toString(),
+                'm': mode.toString()
+            }
+        });
+        if (response.status === 200) {
+            reply.send({ rank: response.data });
+        } else {
+            reply.status(response.status).send({ error: `OSU Daily API error: ${response.status}` });
+        }
+    } catch (error) {
+        reply.status(500).send({ error: `Failed to fetch rank: ${error.message}` });
+    }
+});
+
+// Get PP required for rank
+fastify.get('/pp-for-rank', async (request, reply) => {
+    const rank = request.query.rank;
+    const mode = request.query.mode || '0';
+
+    if (!rank) {
+        reply.status(400).send({ error: 'Rank is required' });
+        return;
+    }
+
+    try {
+        const response = await axios.get('https://osudaily.net/data/getPPRank.php', {
+            params: {
+                't': 'rank',
+                'v': rank.toString(),
+                'm': mode.toString()
+            }
+        });
+
+        if (response.status === 200) {
+            reply.send({ pp: response.data });
+        } else {
+            reply.status(response.status).send({ error: `OSU Daily API error: ${response.status}` });
+        }
+    } catch (error) {
+        reply.status(500).send({ error: `Failed to fetch PP: ${error.message}` });
     }
 });
 
