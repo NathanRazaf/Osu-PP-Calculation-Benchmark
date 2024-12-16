@@ -58,7 +58,7 @@ const OutlierSchema = new Schema({
         required: true,
         default: Date.now
     }
-});
+}, { _id: false }); 
 
 // OutlierDistributionGraph Schema
 const OutlierDistributionGraphSchema = new Schema({
