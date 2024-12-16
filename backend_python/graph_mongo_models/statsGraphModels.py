@@ -24,6 +24,9 @@ class OutlierModel(EmbeddedDocument):
     actualPP = fields.FloatField(required=True)
     error = fields.FloatField(required=True)
     createdAt = fields.DateTimeField(default=datetime.now, required=True)
+    meta = {
+        '_id': False
+    }
    
 
 class OutlierDistributionGraphModel(Document):
