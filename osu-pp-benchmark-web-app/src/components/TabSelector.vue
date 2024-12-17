@@ -1,7 +1,7 @@
 <script setup>
 import { ref, computed } from 'vue'
 import GenerateGraphForm from './GenerateGraphForm.vue';
-import StatsForm from './StatsForm.vue';
+import PPStatsPage from './PPStatsPage.vue';
 const activeTab = ref('generateGraph') // Default tab is 'generateGraph'
 
 function switchTab(tab) {
@@ -13,10 +13,8 @@ const currentComponent = computed(() => {
   switch (activeTab.value) {
     case 'generateGraph':
       return GenerateGraphForm
-    case 'statsForm':
-      return StatsForm
-    default:
-      return FetchDataForm
+    case 'PPStatsPage':
+      return PPStatsPage
   }
 })
 </script>
@@ -32,8 +30,8 @@ const currentComponent = computed(() => {
     </button>
     <button 
       class="two"
-      :class="{ active: activeTab === 'statsForm' }" 
-      @click="switchTab('statsForm')"
+      :class="{ active: activeTab === 'PPStatsPage' }" 
+      @click="switchTab('PPStatsPage')"
     >
       PP Stats
     </button>
@@ -77,15 +75,13 @@ button {
   border-right: 1px solid #1a3b5d;
 }
 
-.three {
-  border-left: none;
-  border-right: 1px solid #1a3b5d;
+button.active {
+  background-color: #2b81b7;
 }
 
 button:hover {
   background-color: #2b81b7;
 }
-
 
 button:focus {
   background-color: #2b81b7;

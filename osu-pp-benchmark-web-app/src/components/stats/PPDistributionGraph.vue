@@ -1,8 +1,7 @@
-<!-- PPDistributionGraph.vue -->
 <template>
     <div style="display:flex; flex-direction: column; align-items: center; justify-content: center; width: 100%;">
       <h3 style="margin-bottom: 10px;">PP Distribution Across Ranges</h3>
-      <div ref="plotlyContainer" style="width: 50%; height: 400px; margin-bottom: 30px;"></div>
+      <div ref="plotlyContainer" style="width: 80%; height: 550px; margin-bottom: 30px;"></div>
     </div>
   </template>
   
@@ -71,3 +70,4 @@
     }
   })
   </script>
+

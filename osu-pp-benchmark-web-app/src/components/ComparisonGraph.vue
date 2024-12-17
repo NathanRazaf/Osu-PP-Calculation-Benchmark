@@ -43,6 +43,22 @@ title: {
   type: String,
   default: 'Graph',
 },
+addOjsamaPP: {
+  type: Boolean,
+  required: true
+},
+addRosuPP: {
+  type: Boolean,
+  required: true
+},
+addOtpcPP: {
+  type: Boolean,
+  required: true
+},
+addActualPP: {
+  type: Boolean,
+  required: true
+}
 })
 
 // Create a computed property for the graph data
@@ -54,10 +70,10 @@ otpcPP: props.comparisonGraphData.otpcPP || [],
 actualPP: props.comparisonGraphData.actualPP || [],
 pp_min: props.comparisonGraphData.pp_min || 0,
 pp_cap: props.comparisonGraphData.pp_cap || 100,
-addOjsamaPP: props.comparisonGraphData.addOjsamaPP || false,
-addRosuPP: props.comparisonGraphData.addRosuPP || false,
-addOtpcPP: props.comparisonGraphData.addOtpcPP || false,
-addActualPP: props.comparisonGraphData.addActualPP || false,
+addOjsamaPP: props.addOjsamaPP || false,
+addRosuPP: props.addRosuPP || false,
+addOtpcPP: props.addOtpcPP || false,
+addActualPP: props.addActualPP || false,
 }))
 
 // Ref for the Plotly container
@@ -173,6 +189,13 @@ const layout = {
   autosize: true,
   hovermode: 'x unified',
   showlegend: true,
+  legend: {
+        orientation: 'h', // horizontal 
+        yanchor: 'bottom',
+        y: -0.3, // position below the chart
+        xanchor: 'center',
+        x: 0.5,
+      },
 }
 
 Plotly.newPlot(plotlyContainer.value, plotData, layout)
@@ -195,4 +218,18 @@ if (props.comparisonGraphData) {
   renderGraph()
 }
 })
+
+watch(
+  [
+    () => props.addOjsamaPP,
+    () => props.addRosuPP,
+    () => props.addOtpcPP,
+    () => props.addActualPP
+  ],
+  () => {
+    if (props.comparisonGraphData) {
+      renderGraph()
+    }
+  }
+)
 </script>

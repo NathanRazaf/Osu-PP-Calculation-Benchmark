@@ -83,7 +83,14 @@ function renderGraph() {
   const layout = {
     title: `${props.title}<br>Error threshold: ${props.outliersGraphData.errorThreshold}`,
     xaxis: { title: 'Actual PP' },
-    yaxis: { title: 'Error Magnitude' }
+    yaxis: { title: 'Error Magnitude' },
+    legend: {
+        orientation: 'h', // horizontal 
+        yanchor: 'bottom',
+        y: -0.3, // position below the chart
+        xanchor: 'center',
+        x: 0.5,
+      },
   }
 
   Plotly.newPlot(plotlyContainer.value, plotData, layout)

@@ -1,11 +1,7 @@
 <script setup>
-import Header from './components/Header.vue'
-import Footer from './components/Footer.vue'
-import TabSelector from './components/TabSelector.vue';
+import { RouterView } from 'vue-router';
 </script>
 
 <template>
-  <Header />
-  <TabSelector />
-  <Footer />
+  <RouterView />
 </template>

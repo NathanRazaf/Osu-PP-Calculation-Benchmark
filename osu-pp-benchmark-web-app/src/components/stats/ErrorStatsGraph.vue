@@ -1,6 +1,6 @@
 <template>
     <div style="display:flex; flex-direction: column; align-items: center; justify-content: center; width: 100%;">
-      <h3>Overall best model in this range (assuming the 3 metrics have the same weight) :</h3>
+      <h3 style="text-align: center;">Overall best model in this range (assuming the 3 metrics have the same weight) :</h3>
       <h3 style="margin-bottom: 10px;">{{ bestModel }}</h3>
       <div ref="plotlyContainer" style="width: 80%; height: 700px;"></div>
     </div>
@@ -44,6 +44,13 @@
       xaxis: { title: 'Calculators' },
       yaxis: { title: 'Error Value' },
       barmode: 'group',
+      legend: {
+        orientation: 'h', // horizontal 
+        yanchor: 'bottom',
+        y: -0.3, // position below the chart
+        xanchor: 'center',
+        x: 0.5,
+      },
     }
 
     Plotly.newPlot(plotlyContainer.value, plotData, layout)

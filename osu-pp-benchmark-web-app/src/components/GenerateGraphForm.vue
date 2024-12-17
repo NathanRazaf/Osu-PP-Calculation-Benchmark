@@ -50,20 +50,26 @@
 
     <!-- Graph container -->
     <ComparisonGraph
-    v-if="comparisonGraphData"
-    :comparisonGraphData="comparisonGraphData"
-    title="Performance Points Comparison"
+      v-if="comparisonGraphData"
+      :comparisonGraphData="comparisonGraphData"
+      :addOjsamaPP="addOjsamaPP"
+      :addRosuPP="addRosuPP"
+      :addOtpcPP="addOtpcPP"
+      :addActualPP="addActualPP"
+      title="Performance Points Comparison"
     />
 
   </div>
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
 import { fetchBeatmapScores } from '../fetchers/fetch_beatmap_scores'
 import { fetchUserScores } from '../fetchers/fetch_user_scores'
 import ComparisonGraph from './ComparisonGraph.vue'
 import axios from 'axios'
+import { CacheManager } from '../assets/cacheManager'
+
 const identifier = ref('')
 const isUsername = ref(true)
 const progressValue = ref(0)
@@ -76,45 +82,40 @@ const dataUrl = 'https://osu-statistics-fetcher.onrender.com/graph/get-pp-data'
 const comparisonGraphData = ref(null)
 const errorMessage = ref('')
 
+// Initialize cache manager
+const cacheManager = new CacheManager()
+
 async function onButtonPress() {
   try {
-    // Reset progress before starting
     progressValue.value = 0
     loadingData.value = true
     errorMessage.value = ''
 
-    const params = {
-      identifier: identifier.value,
-      isUsername: isUsername.value,
-      addOjsamaPP: addOjsamaPP.value,
-      addRosuPP: addRosuPP.value,
-      addOtpcPP: addOtpcPP.value,
-      addActualPP: addActualPP.value,
-    }
+    // Check cache first
+    const cachedData = cacheManager.getCachedData(identifier.value, isUsername.value)
     
-    try {
-      const response = await axios.get(dataUrl, { params })
-      const actualPParray = response.data.actualPP
-      // Call the fetcher if there's less than 100 values in the database
-      if (actualPParray.length < 100) {
-        await callFetcher()
-      }
-      await loadGraph()
-    } catch (error) {
-      if (error.response && error.response.status === 404) {
-        // If 404, call fetcher to get new data
+    if (cachedData && cacheManager.isDataValid(identifier.value, isUsername.value)) {
+      // Use cached data if it's valid
+      comparisonGraphData.value = cachedData.data
+      console.log('Using cached data')
+    } else {
+      // Fetch new data if cache is invalid or missing
+      try {
         await callFetcher()
         await loadGraph()
-      } else {
-        // Re-throw other errors to be caught by outer try-catch
-        throw error
+      } catch (error) {
+        if (error.response && error.response.status === 404) {
+          await callFetcher()
+          await loadGraph()
+        } else {
+          throw error
+        }
       }
     }
   } catch (error) {
-    console.error('Error calling fetcher:', error)
-    errorMessage.value = 'An error occurred while processing your request'
+    console.error('Error:', error)
+    errorMessage.value = `The ${isUsername ? 'user' : 'beatmap'} could not be found.`
   } finally {
-    // Only set loadingData to false here, after everything is complete
     loadingData.value = false
   }
 }
@@ -126,16 +127,15 @@ async function callFetcher() {
       loadGraph()
     }
 
-    // Call the appropriate fetch function based on isUsername
     if (isUsername.value) {
       await fetchUserScores(identifier.value, 100, onProgress)
     } else {
       await fetchBeatmapScores(parseInt(identifier.value), 100, onProgress)
     }
-
-  
+    loadingData.value = false
   } catch (error) {
     console.error('Error calling fetcher:', error)
+    throw error
   }
 }
 
@@ -152,6 +152,10 @@ async function loadGraph() {
     
     const response = await axios.get(dataUrl, { params })
     comparisonGraphData.value = response.data
+    
+    // Cache the new data
+    cacheManager.saveData(identifier.value, isUsername.value, response.data)
+    
     errorMessage.value = ''
   } catch (error) {
     if (error.status === 404) {
@@ -164,6 +168,11 @@ async function loadGraph() {
     }
   }
 }
+
+// Clean up expired cache entries when component is mounted
+onMounted(() => {
+  cacheManager.clearExpiredCache()
+})
 </script>
 
 <style scoped>
