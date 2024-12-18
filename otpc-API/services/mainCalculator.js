@@ -62,9 +62,12 @@ async function calculatePerformance(scoreParams, dir) {
 
                 // Delete the cache file after parsing the output
                 deleteCacheFile(beatmapId, dir);
+                
+                const stats = jsonOutput.score.statistics;
+                const grade = calculateGrade(stats, mods);
 
                 if (jsonOutput?.performance_attributes?.pp) {
-                    resolve({ pp: parseFloat(jsonOutput.performance_attributes.pp.toFixed(3)) });
+                    resolve({ pp: parseFloat(jsonOutput.performance_attributes.pp.toFixed(3)), grade });
                 } else {
                     reject(new Error("PP value not found in JSON output."));
                 }
@@ -73,6 +76,52 @@ async function calculatePerformance(scoreParams, dir) {
             }
         });
     });
+}
+
+function calculateGrade(stats, mods) {
+    const totalHits = stats.great + stats.ok + stats.meh + stats.miss;
+    // Perfect score
+    if (stats.great === totalHits) {
+        // SSH if HD or FL is enabled
+        if (mods.includes('HD') || mods.includes('FL')) {
+            return 'SSH';
+        } else {
+            // SS otherwise
+            return 'SS';
+        }
+    }
+
+    const proportion300s = stats.great / totalHits;
+    const proportion50s = stats.meh / totalHits;
+
+    // Over 90% 300s, at most 1% 50s, and no misses
+    if (proportion300s > 0.9 && proportion50s <= 0.01 && stats.miss === 0) {
+        // SH if HD or FL is enabled
+        if (mods.includes('HD') || mods.includes('FL')) {
+            return 'SH';
+        } else {
+            // S otherwise
+            return 'S';
+        }
+    }
+
+    // A if over 80% 300s and no misses OR over 90% 300s
+    if (proportion300s > 0.8 && stats.miss === 0 || proportion300s > 0.9) {
+        return 'A';
+    }
+
+    // B if over 70% 300s and no misses OR over 80% 300s
+    if (proportion300s > 0.7 && stats.miss === 0 || proportion300s > 0.8) {
+        return 'B';
+    }
+
+    // C if over 60% 300s
+    if (proportion300s > 0.6) {
+        return 'C';
+    }
+
+    // Anything else is a D
+    return 'D';
 }
 
 module.exports = { calculatePerformance };
